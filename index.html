@@ -1,0 +1,367 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="自作の無料ブラウザゲームを遊ぼう！ Kanji Battle Simulator、Fishing Simulator、昆虫王国を公開中。">
+  <meta name="theme-color" content="#172554">
+  <title>CHIIDU GAMES｜無料ブラウザゲーム</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans JP", sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, #172554, #312e81);
+      color: white;
+      padding: 35px 18px;
+    }
+
+    .wrap {
+      max-width: 1050px;
+      margin: auto;
+      padding: 0 18px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: #dbeafe;
+      margin: 8px 0 0;
+    }
+
+    .hero {
+      padding: 25px;
+      margin: 25px 0;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px #1725540d;
+    }
+
+    .hero h2 {
+      margin-top: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 25px 0 20px;
+    }
+
+    input,
+    select {
+      padding: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: white;
+      font-size: 16px;
+    }
+
+    input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    select {
+      max-width: 100%;
+    }
+
+    .games {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 270px), 1fr)
+      );
+      gap: 20px;
+      margin: 20px 0 35px;
+    }
+
+    .game {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 4px 16px #17255410;
+      border: 1px solid #e2e8f0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .game:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px #17255418;
+    }
+
+    .emoji {
+      font-size: 54px;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .game h3 {
+      margin: 12px 0 5px;
+      font-size: 21px;
+      line-height: 1.4;
+    }
+
+    .game p {
+      color: #64748b;
+      margin: 8px 0 20px;
+      flex: 1;
+    }
+
+    .play {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      background: #2563eb;
+      color: white;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .play:hover {
+      background: #1d4ed8;
+    }
+
+    .notice {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      margin-bottom: 30px;
+    }
+
+    .notice h2 {
+      margin-top: 0;
+    }
+
+    footer {
+      background: #172033;
+      color: #cbd5e1;
+      padding: 28px 0;
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #bfdbfe;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    #empty {
+      text-align: center;
+      padding: 30px;
+      color: #64748b;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>🎮 CHIIDU GAMES</h1>
+      <p>自作ゲームを、いつでも遊ぼう！</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="hero">
+      <h2>オリジナルゲームセンター</h2>
+      <p>
+        CHIIDU GAMESへようこそ！
+        ここではオリジナルのブラウザゲームを公開しています。
+        気になるゲームを選んで、ぜひ遊んでみてください！
+      </p>
+    </section>
+
+    <h2>🎯 ゲームを探す</h2>
+
+    <div class="controls">
+      <input
+        id="search"
+        type="search"
+        placeholder="ゲーム名や説明で検索..."
+        aria-label="ゲームを検索"
+      >
+
+      <select id="genre" aria-label="ジャンルで絞り込み">
+        <option value="all">すべてのジャンル</option>
+        <option value="battle">バトル</option>
+        <option value="simulation">シミュレーション</option>
+        <option value="collection">収集・育成</option>
+      </select>
+    </div>
+
+    <h2>🎮 公開中のゲーム</h2>
+
+    <section class="games" id="games">
+
+      <!-- ゲーム1：Kanji Battle Simulator -->
+      <article class="game" data-genres="battle">
+        <div class="emoji">⚔️</div>
+        <span class="tag">バトル・シミュレーション</span>
+
+        <h3>Kanji Battle Simulator</h3>
+
+        <p>
+          漢字の力を使って戦うオリジナルゲーム！
+          さまざまな漢字を使ってバトルを楽しもう。
+        </p>
+
+        <a
+          class="play"
+          href="games/kanjibattles.html"
+        >
+          ゲームで遊ぶ →
+        </a>
+      </article>
+
+      <!-- ゲーム2：Fishing Simulator -->
+      <article class="game" data-genres="simulation">
+        <div class="emoji">🎣</div>
+        <span class="tag">釣り・シミュレーション</span>
+
+        <h3>Fishing Simulator</h3>
+
+        <p>
+          海の魚を捕まえて、装備を強化しよう！
+          自分だけの釣りゲームを楽しもう。
+        </p>
+
+        <a
+          class="play"
+          href="games/fishing.html"
+        >
+          ゲームで遊ぶ →
+        </a>
+      </article>
+
+      <!-- ゲーム3：昆虫王国 -->
+      <article class="game" data-genres="battle collection">
+        <div class="emoji">🪲</div>
+        <span class="tag">昆虫収集・バトル</span>
+
+        <h3>昆虫王国：インセクトバトル</h3>
+
+        <p>
+          たくさんの昆虫を捕まえて図鑑を埋めよう！
+          昆虫たちを育てて、自分だけのチームで戦おう。
+        </p>
+
+        <a
+          class="play"
+          href="games/insect.html"
+        >
+          ゲームで遊ぶ →
+        </a>
+      </article>
+
+    </section>
+
+    <p id="empty" hidden>
+      該当するゲームがありません。別の言葉で検索してみてください。
+    </p>
+
+    <section class="notice">
+      <h2>🌟 CHIIDU GAMESについて</h2>
+
+      <p>
+        CHIIDU GAMESは、個人で制作したゲームを公開する
+        オリジナルゲームポータルサイトです。
+        これからも新しいゲームを追加していきます！
+      </p>
+
+      <p>
+        ※ゲームの内容や操作方法は、各ゲーム内の説明を確認してください。
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <h3>🎮 CHIIDU GAMES</h3>
+      <p>オリジナルのブラウザゲームを楽しもう！</p>
+
+      <div class="footer-links">
+        <a href="index.html">ホーム</a>
+      </div>
+
+      <p>© CHIIDU GAMES</p>
+    </div>
+  </footer>
+
+  <script>
+    const search = document.getElementById("search");
+    const genre = document.getElementById("genre");
+    const cards = [...document.querySelectorAll(".game")];
+    const empty = document.getElementById("empty");
+
+    function filterGames() {
+      const word = search.value.trim().toLowerCase();
+      const selectedGenre = genre.value;
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        const genres = card.dataset.genres.split(" ");
+
+        const matchesSearch = text.includes(word);
+        const matchesGenre =
+          selectedGenre === "all" ||
+          genres.includes(selectedGenre);
+
+        const visible = matchesSearch && matchesGenre;
+
+        card.hidden = !visible;
+
+        if (visible) {
+          visibleCount++;
+        }
+      });
+
+      empty.hidden = visibleCount > 0;
+    }
+
+    search.addEventListener("input", filterGames);
+    genre.addEventListener("change", filterGames);
+  </script>
+</body>
+</html>
