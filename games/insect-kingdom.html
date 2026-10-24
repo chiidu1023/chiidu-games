@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>昆虫王国：インセクトバトル</title>
+<style>
+:root{--bg:#e8f5d9;--ink:#1f3a1d;--card:#fffef6;--g1:#2f7d32;--g2:#6dbb4a;--line:#c5dfa8;--c0:#7bc96f;--c1:#3b9ef0;--c2:#a755e8;--c3:#f0b429;--c4:#ff4d79;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#13241a;--ink:#e6f3d8;--card:#1d3326;--line:#2f5236}}
+*{box-sizing:inherit;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Zen Maru Gothic","Yu Gothic",system-ui,sans-serif;line-height:1.5;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#app{max-width:760px;margin:0 auto;min-height:100%;padding:10px 12px calc(84px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{margin:.3em 0}h2{font-size:1.25rem}
+.top{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-radius:18px;padding:14px 16px;margin-bottom:10px}
+.top b{font-size:1.4rem;letter-spacing:.04em}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px;margin:8px 0}
+.btn{display:block;width:100%;min-height:48px;border:0;border-radius:14px;background:var(--g1);color:#fff;font:inherit;font-weight:700;font-size:1.05rem;padding:10px 14px;cursor:pointer}
+.btn.sub{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:2px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));z-index:20}
+nav button{flex:1;border:0;background:none;color:var(--ink);font:inherit;font-size:.72rem;padding:6px 0;min-height:48px;border-radius:10px;cursor:pointer}
+nav button.on{background:var(--g1);color:#fff}
+nav button span{display:block;font-size:1.3rem;line-height:1.1}
+.bar{height:12px;background:var(--line);border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g1),var(--g2))}
+/* bush */
+#bushWrap{position:relative;text-align:center;padding:6px 0}
+#bush{font-size:min(46vw,230px);line-height:1;background:none;border:0;cursor:pointer;filter:drop-shadow(0 8px 6px #0003);transition:transform .06s}
+#bush:active{transform:scale(.93) rotate(-2deg)}
+#pop{min-height:96px;display:flex;align-items:center;justify-content:center}
+.big{font-size:2rem;font-weight:800}
+.rar0{--rc:var(--c0)}.rar1{--rc:var(--c1)}.rar2{--rc:var(--c2)}.rar3{--rc:var(--c3)}.rar4{--rc:var(--c4)}
+.ic{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--rc,#ccc));font-size:30px;flex:none;border:3px solid var(--rc,#ccc)}
+.supic{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--rc,#ccc));font-size:16px;vertical-align:middle;flex:none;border:2px solid var(--rc,#ccc);margin-right:3px}
+.supic svg{width:18px!important;height:18px!important;vertical-align:middle!important}
+.mini{display:flex;gap:10px;align-items:center;text-align:left;background:var(--card);border:3px solid var(--rc);border-radius:16px;padding:8px 14px;animation:pp .25s ease-out}
+.rar2 .mini{box-shadow:0 0 18px var(--c2)}.rar3 .mini{box-shadow:0 0 22px var(--c3);border-image:linear-gradient(90deg,#f0b429,#ff6bd6,#4de1ff,#f0b429) 1}.rar4 .mini{box-shadow:0 0 30px var(--c4),0 0 60px var(--c3)}
+@keyframes pp{from{transform:scale(.6);opacity:.2}to{transform:scale(1);opacity:1}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.pt{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--rc);box-shadow:0 0 8px var(--rc);animation:fl .8s ease-out forwards}
+.pt.leaf{border-radius:0 100% 0 100%}
+.pt.rb{background:conic-gradient(#f0b429,#ff6bd6,#4de1ff,#f0b429)}
+@keyframes fl{to{transform:translate(var(--dx),var(--dy)) rotate(260deg) scale(.2);opacity:0}}
+.lg{position:absolute;inset:0;background:radial-gradient(circle,#fff8,var(--c4) 40%,#3a0a5a00 80%);animation:lg 1.2s ease-out forwards;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.4rem;font-weight:900;text-shadow:0 0 20px #f0b429;text-align:center}
+@keyframes lg{0%{opacity:0;transform:scale(1.3)}20%{opacity:1}100%{opacity:0}}
+.ring{position:absolute;width:20px;height:20px;border:4px solid var(--rc);border-radius:50%;animation:rg .6s ease-out forwards}
+@keyframes rg{to{transform:scale(18);opacity:0}}
+#toast{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:#222c;color:#fff;border-radius:20px;padding:6px 14px;z-index:40;font-weight:700;display:none}
+/* grids */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.cell{background:var(--card);border:3px solid var(--rc,var(--line));border-radius:14px;padding:6px 2px;text-align:center;font-size:.72rem;cursor:pointer}
+.cell .ic{width:44px;height:44px;font-size:24px}
+.sil .ic{filter:brightness(0) opacity(.5)}
+.tag{display:inline-block;border-radius:8px;padding:0 8px;font-size:.72rem;font-weight:700;color:#fff;background:var(--rc)}
+.new{background:#ff3d3d;color:#fff;border-radius:8px;padding:0 6px;font-size:.7rem;font-weight:800}
+select{font:inherit;min-height:42px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink);flex:1;min-width:0}
+.modal{position:fixed;inset:0;background:#000a;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal>div{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px))}
+.line{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}
+.hero{border:4px solid var(--rc);border-radius:18px;padding:8px;display:flex;gap:10px;align-items:center;background:var(--card)}
+.big2{font-size:2.6rem;font-weight:900;color:var(--g1)}
+small,.muted{opacity:.75}
+.bar i{transition:width .7s ease-out}
+.ic svg{width:1.25em!important;height:1.25em!important;vertical-align:middle!important}
+.gg{height:8px;margin-top:3px}.gg i{background:linear-gradient(90deg,#4da3ff,#a66bff,#ff7bd5)!important}
+.gg.rdy{box-shadow:0 0 12px #ff7bd5;animation:rdy .9s infinite alternate}@keyframes rdy{to{box-shadow:0 0 24px #fff}}
+.btn.ult{background:linear-gradient(90deg,#7c4dff,#ff4fd8)}.btn.ult.rdy{animation:rdy .9s infinite alternate;box-shadow:0 0 14px #ff7bd5}
+#ult{position:fixed;inset:0;z-index:60;display:none;overflow:hidden;cursor:pointer}
+#ult .dim{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .25s}#ult.on .dim{opacity:.82}
+#ult .ins{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.5);font-size:min(46vw,220px);line-height:1;opacity:0;filter:drop-shadow(0 0 22px var(--uc))}
+#ult.show .ins{animation:uIn .5s ease-out forwards,uGl 1s ease-in-out .5s infinite}
+@keyframes uIn{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}@keyframes uGl{50%{filter:drop-shadow(0 0 46px var(--uc)) brightness(1.4)}}
+#ult .nm{position:absolute;left:0;right:0;top:14%;text-align:center;color:#fff;font-weight:900;font-size:clamp(1.25rem,6.4vw,2.6rem);text-shadow:0 0 14px var(--uc),0 3px 0 #000;opacity:0;padding:0 8px}
+#ult.nmz .nm{animation:uNm .45s ease-out forwards}@keyframes uNm{from{opacity:0;transform:scale(1.8)}to{opacity:1;transform:scale(1)}}
+#ult .fl{position:absolute;inset:0;background:#fff;opacity:0}#ult .fl.go{animation:uFl .35s ease-out}@keyframes uFl{0%{opacity:.95}to{opacity:0}}
+#ult .dmg{position:absolute;left:0;right:0;top:50%;text-align:center;font-size:clamp(3rem,18vw,6rem);font-weight:900;color:var(--uc);-webkit-text-stroke:2px #000;text-shadow:0 0 24px var(--uc);opacity:0;transform:scale(.4)}
+#ult .dmg.go{animation:uDm .5s cubic-bezier(.2,1.6,.4,1) forwards}@keyframes uDm{to{opacity:1;transform:scale(1)}}
+#ult .sp{position:absolute;left:0;right:0;bottom:14%;text-align:center;color:#fff;font-weight:800;text-shadow:0 2px 6px #000}
+.ht{position:absolute;color:#fff;font-weight:900;font-size:1.7rem;text-shadow:0 0 10px var(--uc),0 2px 0 #000;animation:uHt .6s forwards}@keyframes uHt{from{opacity:0;transform:translateY(10px) scale(.6)}30%{opacity:1;transform:none}to{opacity:0;transform:translateY(-14px)}}
+.ending{position:fixed;inset:0;z-index:55;overflow:hidden;background:radial-gradient(ellipse at 50% 28%,#254c35,#09140f 72%);color:#f5f0cf;text-align:center}
+.ending:before{content:"";position:absolute;inset:0;opacity:.35;background-image:radial-gradient(2px 2px at 12% 18%,#fff 50%,transparent 60%),radial-gradient(1.5px 1.5px at 76% 31%,#fff 50%,transparent 60%),radial-gradient(2px 2px at 88% 72%,#f0d98a 50%,transparent 60%),radial-gradient(1px 1px at 28% 82%,#fff 50%,transparent 60%);background-size:240px 210px}
+.credit-window{position:absolute;inset:0 0 72px;overflow:hidden;mask-image:linear-gradient(transparent,#000 12%,#000 86%,transparent)}
+.credit-roll{position:absolute;top:100%;left:0;right:0;padding:0 20px 35vh;animation:creditScroll 42s linear forwards}
+.credit-roll h1{font-size:clamp(2rem,8vw,3.4rem);color:#f4d97c;text-shadow:0 0 20px #e7b84b88;letter-spacing:.08em;margin:0 0 12px}
+.credit-roll h2{font-size:clamp(1.1rem,4vw,1.5rem);color:#e2c86f;letter-spacing:.18em;margin:0 0 12px}
+.credit-roll p{margin:0 0 10px;font-size:clamp(.95rem,3.8vw,1.2rem)}
+.credit-roll .credit-space{height:17vh}
+.credit-roll .credit-small{font-size:.86rem;opacity:.78}
+.credit-reward{max-width:560px;margin:16px auto;text-align:left;color:#1f2a1d}
+.ending-actions{position:absolute;left:0;right:0;bottom:0;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,#09140f 35%)}
+@keyframes creditScroll{from{transform:translateY(0)}to{transform:translateY(calc(-100% - 100vh))}}
+@media(prefers-reduced-motion:reduce){.credit-window{overflow-y:auto;mask-image:none}.credit-roll{position:relative;top:auto;padding:10vh 20px 35vh;animation:none}}
+.fxs{position:absolute;left:0;right:0;height:10px;transform:rotate(-24deg);background:linear-gradient(90deg,transparent,var(--uc),#fff,var(--uc),transparent);box-shadow:0 0 22px var(--uc);animation:uSl .45s ease-out forwards}
+.fxs.r1{transform:rotate(24deg)}.fxs.wind{height:4px;transform:none}.fxs.cross{height:0;top:45%!important;animation:none;background:none;box-shadow:none}
+.fxs.cross i{position:absolute;left:-10%;right:-10%;top:0;height:10px;background:linear-gradient(90deg,transparent,var(--uc),#fff,var(--uc),transparent);box-shadow:0 0 22px var(--uc);animation:uSl .45s ease-out forwards}
+.fxs.cross i:first-child{transform:rotate(30deg)}.fxs.cross i:last-child{transform:rotate(-30deg)}
+@keyframes uSl{from{clip-path:inset(0 100% 0 0);opacity:1}60%{clip-path:inset(0);opacity:1}to{clip-path:inset(0);opacity:0}}
+.fxr{position:absolute;left:50%;top:46%}.fxr i{position:absolute;width:60px;height:60px;border:6px solid var(--uc);border-radius:50%;box-shadow:0 0 30px var(--uc),inset 0 0 30px var(--uc);transform:translate(-50%,-50%) scale(.2);animation:uRg .7s ease-out forwards}
+.fxr i+i{animation-delay:.12s;border-color:#fff}@keyframes uRg{to{transform:translate(-50%,-50%) scale(9);opacity:0}}
+.fxst{position:absolute;left:50%;top:44%}.fxst i{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--uc);box-shadow:0 0 14px var(--uc);animation:uSt .8s ease-in forwards}
+@keyframes uSt{from{transform:rotate(var(--a)) translateX(130px)}to{transform:rotate(calc(var(--a) + 200deg)) translateX(0) scale(.3)}}
+.shk #app{animation:shk .4s}@keyframes shk{20%{transform:translate(-9px,4px)}40%{transform:translate(8px,-5px)}60%{transform:translate(-6px,3px)}80%{transform:translate(4px,-2px)}}
+@media(prefers-reduced-motion:reduce){.pt,.lg,.ring,.mini{animation-duration:.01s}}
+</style></head><body>
+<div id="app"></div><div id="fx"></div><div id="ult"></div><div id="toast"></div><div id="modal"></div>
+<nav id="nav"></nav>
+<script>
+"use strict";
+const RN=['ノーマル','レア','超レア','伝説級','神話級'],RM=[0,0,1,2,3,4];
+const CL=['チョウ目','コウチュウ目','ハチ目','カマキリ目','バッタ目','トンボ目','カメムシ目','ハエ目','ゴキブリ目','カゲロウ目','トビケラ目','ナナフシ目','ハサミムシ目','アミメカゲロウ目','カワゲラ目'];
+function bugSvg(sh,col){let [c,d,l]=col,defs='';
+ if(sh==='rainbow'){defs='<defs><linearGradient id="bugRb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2dd4bf"/><stop offset=".5" stop-color="#a855f7"/><stop offset="1" stop-color="#f43f5e"/></linearGradient></defs>';c='url(#bugRb)';sh='stag'}
+ const legs=`<path d="M23 29L8 24M22 37L6 39M25 46L9 56M41 29L56 24M42 37L58 39M39 46L55 56" stroke="${d}" stroke-width="2.6" stroke-linecap="round" fill="none"/>`;
+ const rx=sh==='elep'?16:sh==='flat'?15.5:14;
+ const body=`<ellipse cx="32" cy="43" rx="${rx}" ry="${sh==='flat'?18:19}" fill="${c}" stroke="${d}" stroke-width="1.8"/><path d="M32 25V62" stroke="${d}" stroke-width="1.3" opacity=".8"/><ellipse cx="26" cy="40" rx="3.6" ry="11" fill="${l}" opacity=".4"/>`;
+ const pron=`<ellipse cx="32" cy="24.5" rx="${sh==='flat'?12:10.5}" ry="8" fill="${c}" stroke="${d}" stroke-width="1.8"/><ellipse cx="28" cy="22.5" rx="3" ry="2" fill="${l}" opacity=".45"/>`;
+ const hd=sh==='miyama'?10.5:sh==='flat'?9:6.5;
+ const head=`<ellipse cx="32" cy="14" rx="${hd}" ry="5.6" fill="${d}"/>`;
+ const P=(p,w)=>`<path d="${p}" stroke="${d}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+ const H={
+  rhino:P('M32 13V0Q32 -6 25 -8M32 0Q32 -6 39 -8',3.4),
+  sil_t:`<path d="M28.5 23Q22 6 31 -10Q33 6 35.5 23Z" fill="${d}" stroke="${d}" stroke-width="1.4" stroke-linejoin="round"/><path d="M26 13L21.5 9.5L27 8Z" fill="${d}"/>`,
+  sil_h:`<path d="M26 23Q24 4 31 -12Q36 4 38 23Z" fill="${d}" stroke="${d}" stroke-width="1.4" stroke-linejoin="round"/><path d="M25.5 14L21 12L26 10Z" fill="${d}"/><path d="M25.8 6L22 3L26.5 2.5Z" fill="${d}"/>`,
+  sil_g:`<path d="M25 23Q22 10 30 -2Q35 10 39 23Z" fill="${d}" stroke="${d}" stroke-width="1.4" stroke-linejoin="round"/><path d="M24.5 15L18.5 10.5L25.5 8Z" fill="${d}"/>`,
+  sil_m:`<path d="M27 23Q19 6 31 -8Q34 6 37 23Z" fill="${d}" stroke="${d}" stroke-width="1.4" stroke-linejoin="round"/><path d="M24 5.5L20 1L26 0.5Z" fill="${d}"/>`,
+  herc1:`<path d="M26.5 23Q21 4 32 -11Q34 4 37.5 23Z" fill="${d}" stroke="${d}" stroke-width="1.5" stroke-linejoin="round"/><path d="M29.5 20Q26 5 31 -6" stroke="${l}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".5"/>`,
+  herc:P('M27 22Q18 6 28 -9',4.6)+P('M35 13Q43 5 35 -5',3.6),
+  tri:P('M32 14V-4',3.2)+P('M26.5 22Q20 10 25.5 -2',3.6)+P('M37.5 22Q44 10 38.5 -2',3.6),
+  elep:P('M32 14V3',4)+P('M27 22Q21 14 25 6',4.2)+P('M37 22Q43 14 39 6',4.2),
+  stag:P('M29 13C21 13 15 7 17 -3',3.4)+P('M35 13C43 13 49 7 47 -3',3.4)+P('M17.4 4L22 5.5',2.2)+P('M46.6 4L42 5.5',2.2),
+  long:P('M29 13C22 9 18 1 21 -7',3)+P('M35 13C42 9 46 1 43 -7',3)+P('M19.4 1L23 2.2',2)+P('M44.6 1L41 2.2',2),
+  flat:P('M28.5 13Q19 11 20.5 2',4.8)+P('M35.5 13Q45 11 43.5 2',4.8)+P('M20.7 5L26 6.5',3)+P('M43.3 5L38 6.5',3),
+  miyama:P('M27 13Q19 11 20 3',3.6)+P('M37 13Q45 11 44 3',3.6)+P('M23 12L17 10M41 12L47 10',3)
+ }[sh]||'';
+ const SPOT=({sil_t:[[26,36,1.7,2.1],[38,38,1.7,2.1],[25,46,1.8,2.2],[39,47,1.8,2.2],[30,55,1.7,2],[35,56,1.7,2]],
+  sil_h:[[25,35,2.2,2.6],[39,36,2.2,2.6],[30,41,1.6,2],[34,43,1.6,2],[24,46,2.3,2.8],[40,47,2.3,2.8],[29,52,2,2.4],[36,53,2,2.4],[32,58,1.6,1.8]],
+  sil_g:[[27,38,1.4,1.7],[37,40,1.4,1.7],[28,50,1.5,1.8],[36,52,1.5,1.8]],
+  sil_m:[[26,38,3.2,4],[38,39,3.2,4],[28,52,3,3.6],[36,53,3,3.6]]}[sh]||[]).map(([x,y,a,b])=>`<ellipse cx="${x}" cy="${y}" rx="${a}" ry="${b}" fill="${d}" opacity=".85"/>`).join('');
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -10 64 74" style="width:1em;height:1em;vertical-align:-.15em">${defs}${legs}${body}${SPOT}${pron}${head}${H}</svg>`}
+
+
+/* カブトムシ・クワガタ専用イラスト（SVG）。名前の一部一致で形と色を決める（上から順に判定）。
+   形: rhino=Y字の角 / herc=挟み角 / tri=三本角 / elep=太く短い角 / stag=湾曲した大あご / long=長い大あご / flat=太く短い大あご / miyama=幅広の頭 / rainbow=虹色 */
+const BK=[
+['ヘラクレス','herc1',['#5a5b3a','#262613','#c9c98a']],['ネプチューン','herc1',['#6b4a2b','#2a1a0c','#d7a874']],['サタン','herc1',['#141414','#000','#666']],['ヒルス','sil_h',['#8d9078','#2d3024','#cfd1b8']],['ティティウス','sil_t',['#a9ad7a','#3c4022','#e6e8b8']],['グラント','sil_g',['#b5b27a','#40401f','#efecb8']],['マヤ','sil_m',['#c8c2a2','#4a4430','#f2efd8']],['シロカブト','herc1',['#c9c4a8','#6b6650','#fff']],
+['コーカサス','tri',['#1b1b1f','#000','#7a7a8a']],['アトラス','tri',['#3b2a1e','#120b06','#a07a58']],['モーレンカンプ','tri',['#2a2019','#0a0705','#8a6f55']],['ヅノカブト','tri',['#8a6a3a','#2f2210','#e0c08a']],
+['ゾウカブト','elep',['#4a3322','#170e07','#a07a58']],
+['ヒメカブト','rhino',['#6b4a2b','#241407','#c99a6a']],['カブト','rhino',['#7a3f1d','#2e1608','#d58a55']],
+['ニジイロ','rainbow',['#a855f7','#3a1a5a','#fff']],['キンイロ','stag',['#d8b21a','#5a4300','#fff2a0']],
+['ギラファ','long',['#2b1d12','#0a0603','#9b7554']],['フタマタ','long',['#3a1d12','#120704','#a26a4a']],['シカクワ','long',['#4a2f1c','#170d06','#b08460']],
+['ミヤマ','miyama',['#8a5a2a','#33200c','#e2b77a']],
+['ホソアカ','stag',['#2a9d6a','#0a3a24','#9ff0c8']],['ノコギリ','stag',['#7a3a1c','#2c1308','#d28a5c']],['コクワ','stag',['#3a2418','#120a05','#9a7458']],['スジクワ','stag',['#4a3626','#180f08','#a58468']],
+['ツヤクワ','flat',['#17171a','#000','#6f6f80']],['オオクワ','flat',['#17171a','#000','#6f6f80']],['ヒラタ','flat',['#35231a','#100804','#8c6a55']],['ネブト','flat',['#3a2a20','#120a05','#9a7458']],['マルバネ','flat',['#17171a','#000','#6f6f80']],
+['クワガタ','stag',['#3a2418','#120a05','#9a7458']]];
+const ICO={};
+function insectSvg(sp){
+ const palettes=[
+  [['#ef8cae','#8f315b','#ffe1a8'],['#f2c14e','#7b4a21','#fff1bd'],['#74c0fc','#22577a','#d9f0ff'],['#9b8afb','#493b86','#e6ddff']],
+  [['#718096','#263238','#d5dde3'],['#56a87b','#1e5631','#c8f2d2'],['#b9874e','#53351e','#f4d49a'],['#5898bb','#21415c','#d8efff']],
+  [['#e9aa32','#7b4517','#fff0a6'],['#cf7652','#652f2a','#f5d4a4'],['#77a878','#31593c','#d8efba']],
+  [['#72ad50','#31552c','#c4e79c'],['#9b9a55','#555024','#e5df98'],['#9b6b45','#563b2a','#e8c28c']],
+  [['#8da84a','#3d5129','#d8e99b'],['#76a862','#36543a','#d0edaa'],['#b38948','#644720','#f1d58c']],
+  [['#55a8a0','#205c62','#b7f0e5'],['#6f9db8','#354f72','#d7efff'],['#8ebd72','#41613b','#d8efae']],
+  [['#92865d','#51472d','#e3d8a0'],['#6b9772','#334b3e','#d2eac2'],['#b97c54','#613b2b','#f1cca2']],
+  [['#bd7650','#6b3832','#f0c29a'],['#7d8c9b','#3c4852','#dce5ed'],['#91a64f','#45562a','#e2eab0']],
+  [['#845f42','#3e2a1c','#d8b58a'],['#6c7654','#343f2d','#d4dfae'],['#786c62','#3d3633','#d9cdc2']],
+  [['#b78d52','#604421','#f2dba0'],['#9eaa7b','#4c593a','#e2e9be'],['#8aa6bb','#3f536b','#e2f0ff']],
+  [['#8d7659','#493826','#e4d1a8'],['#789284','#385448','#d1edda'],['#b18a61','#5b4028','#f1ddb5']],
+  [['#7d9c57','#415632','#d3e7a0'],['#9c8254','#5a4529','#e8d39a'],['#6e9a75','#355c43','#c8e8c8']],
+  [['#b58a55','#61431e','#f4d8a0'],['#8c7964','#493a2b','#e5d8c6'],['#789b71','#3d5c3c','#d4e8be']],
+  [['#72aa72','#315d46','#cff0cc'],['#8ca5bf','#455c78','#e1efff'],['#bd9457','#624b2b','#f5e0a2']],
+  [['#7aa5a0','#34545a','#d5eece'],['#8e9c66','#4b5738','#e5e5ad'],['#9c795c','#563e30','#edceaa']]
+ ];
+ const p=palettes[sp.cls][sp.id%palettes[sp.cls].length],c=p[0],d=p[1],l=p[2],v=sp.id;
+ const isAnt=sp.cls===2&&sp.ja.includes('アリ'),isFly=sp.cls===7,isRoach=sp.cls===8&&!sp.ja.includes('シロアリ'),isMoth=sp.cls===0&&(/ガ|マユ|スズメ|ホウジャク|オオスカシバ|カイコ/.test(sp.ja));
+ const legs=isAnt
+  ?`<g stroke="${d}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M28 35L22 29 17 32M28 39L20 40 16 46M30 43L25 51 22 57M40 35L45 29 50 32M40 39L48 40 52 46M38 43L43 51 46 57"/></g>`
+  :isFly
+   ?`<g stroke="${d}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M29 35L23 43 17 52M31 38L28 48 25 57M35 38L38 48 40 57M37 35L43 43 49 52"/></g>`
+   :isRoach
+    ?`<g stroke="${d}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M24 32L13 26 6 31M22 39L11 40 5 47M25 47L15 54 12 61M40 32L51 26 58 31M42 39L53 40 59 47M39 47L49 54 52 61"/><path d="M12 26L9 23M11 40L7 38M15 54L12 51M52 26L55 23M53 40L57 38M49 54L52 51" stroke-width="1.3"/></g>`
+    :`<g stroke="${d}" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M24 35L13 30 7 35M22 41L11 42 6 48M25 46L17 53 14 60M40 35L51 30 57 35M42 41L53 42 58 48M39 46L47 53 50 60"/></g>`;
+ const antenna=isAnt
+  ?`<path d="M12 31Q5 27 8 21L4 17M17 30Q11 24 16 20L14 16"/>`
+  :isFly
+   ?`<path d="M29 18Q25 13 23 16M35 18Q39 13 41 16"/>`
+   :isRoach
+    ?`<path d="M25 20Q12 8 2 5M28 18Q18 3 8 1M39 20Q52 8 62 5M36 18Q46 3 56 1"/>`
+    :isMoth
+     ?`<path d="M29 18Q25 8 18 6M35 18Q39 8 46 6M25 12L20 8M27 15L22 12M39 12L44 8M37 15L42 12" stroke-width="1.5"/>`
+     :sp.cls===2
+      ?`<path d="M27 18Q21 8 17 10M37 18Q43 8 47 10"/>`
+      :sp.cls===0
+       ?`<path d="M29 18Q26 9 23 6M35 18Q38 9 41 6"/>`
+       :sp.cls===8
+        ?`<path d="M27 20Q14 7 4 5M37 20Q50 7 60 5"/>`
+        :`<path d="M28 17Q24 5 20 4M36 17Q40 5 44 4"/>`;
+ const wingPair=(shape)=>`<g stroke="${d}" stroke-width="1.4" stroke-linejoin="round"><path d="${shape[0]}" fill="${l}" fill-opacity=".83"/><path d="${shape[1]}" fill="${l}" fill-opacity=".83"/></g>`;
+ const patterns={
+  0: `${wingPair(['M29 30Q18 13 5 20Q4 34 25 40Z','M35 30Q46 13 59 20Q60 34 39 40Z'])}<g fill="${d}" opacity=".65"><circle cx="${15+(v%5)}" cy="27" r="2.2"/><circle cx="${49-(v%5)}" cy="27" r="2.2"/><circle cx="19" cy="34" r="1.5"/><circle cx="45" cy="34" r="1.5"/></g><ellipse cx="32" cy="36" rx="3" ry="13" fill="${d}"/>`,
+  1: `<ellipse cx="32" cy="39" rx="15" ry="19" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M32 21V57" stroke="${d}" stroke-width="1.6"/><circle cx="23" cy="34" r="2.4" fill="${l}"/><circle cx="41" cy="34" r="2.4" fill="${l}"/><circle cx="24" cy="45" r="2.2" fill="${l}"/><circle cx="40" cy="45" r="2.2" fill="${l}"/><ellipse cx="32" cy="20" rx="9" ry="7" fill="${d}"/>`,
+  2: `${wingPair(['M28 29Q12 12 9 23Q10 33 27 36Z','M36 29Q52 12 55 23Q54 33 37 36Z'])}<ellipse cx="32" cy="39" rx="9" ry="13" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M24 37H40M25 42H39" stroke="${d}" stroke-width="3"/>`,
+  3: `<ellipse cx="34" cy="40" rx="8" ry="19" transform="rotate(-18 34 40)" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M30 25L21 19 27 15M38 25L46 17 41 14" stroke="${d}" stroke-width="3" fill="none"/><path d="M24 31L11 20 15 18 28 28M40 31L53 20 49 18 36 28" stroke="${d}" stroke-width="3" fill="none" stroke-linejoin="round"/>`,
+  4: `<ellipse cx="32" cy="39" rx="7" ry="17" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M27 43Q14 35 9 48L24 53M37 43Q50 35 55 48L40 53" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M28 32H36M27 38H37M28 45H36" stroke="${l}" stroke-width="2"/>`,
+  5: `${wingPair(['M28 30Q3 12 8 23Q13 31 29 35Z','M36 30Q61 12 56 23Q51 31 35 35Z'])}${wingPair(['M29 34Q8 24 12 34Q18 39 29 39Z','M35 34Q56 24 52 34Q46 39 35 39Z'])}<ellipse cx="32" cy="42" rx="3.5" ry="20" fill="${c}" stroke="${d}" stroke-width="1.5"/><circle cx="32" cy="20" r="5" fill="${d}"/>`,
+  6: `<path d="M32 22Q49 24 47 40L32 56 17 40Q15 24 32 22Z" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M32 23V55M20 32L32 39 44 32" fill="none" stroke="${l}" stroke-width="1.8"/><circle cx="32" cy="19" r="6" fill="${d}"/>`,
+  7: `${wingPair(['M27 30Q8 10 9 24Q13 34 28 36Z','M37 30Q56 10 55 24Q51 34 36 36Z'])}<ellipse cx="32" cy="39" rx="7" ry="15" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M32 45L32 57" stroke="${d}" stroke-width="3"/><circle cx="32" cy="23" r="6" fill="${d}"/>`,
+  8: `<ellipse cx="32" cy="39" rx="16" ry="21" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M19 30Q32 36 45 30M17 38Q32 44 47 38M19 47Q32 53 45 47" fill="none" stroke="${d}" stroke-width="1.5"/><ellipse cx="32" cy="20" rx="8" ry="6" fill="${d}"/>`,
+  9: `${wingPair(['M29 30Q19 7 13 11Q14 27 29 37Z','M35 30Q45 7 51 11Q50 27 35 37Z'])}<path d="M32 24V54M29 51L25 60M32 52V62M35 51L39 60" stroke="${d}" stroke-width="2.4" fill="none"/><circle cx="32" cy="20" r="4.5" fill="${d}"/>`,
+  10: `${wingPair(['M29 29Q18 15 12 23L24 42 31 36Z','M35 29Q46 15 52 23L40 42 33 36Z'])}<path d="M20 23L27 35M44 23L37 35" stroke="${d}" stroke-width="1"/><ellipse cx="32" cy="40" rx="5" ry="16" fill="${c}" stroke="${d}" stroke-width="2"/>`,
+  11: `<path d="M32 18Q26 30 32 43Q27 51 31 60" stroke="${d}" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M29 29L15 23M30 38L12 39M31 48L16 56M35 29L49 23M34 38L52 39M33 48L48 56" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="32" cy="16" r="4" fill="${d}"/>`,
+  12: `<ellipse cx="32" cy="39" rx="9" ry="18" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M28 53Q25 60 27 63M36 53Q39 60 37 63" stroke="${d}" stroke-width="2.5" fill="none"/><path d="M27 19L24 12M37 19L40 12" stroke="${d}" stroke-width="1.6"/>`,
+  13: `${wingPair(['M29 31Q5 9 8 27L24 43 31 37Z','M35 31Q59 9 56 27L40 43 33 37Z'])}<path d="M11 18L28 39M17 17L27 34M53 18L36 39M47 17L37 34" stroke="${d}" stroke-width=".8" opacity=".8"/><ellipse cx="32" cy="41" rx="4" ry="16" fill="${c}" stroke="${d}" stroke-width="2"/>`,
+  14: `${wingPair(['M29 30Q12 13 12 24L26 39 31 35Z','M35 30Q52 13 52 24L38 39 33 35Z'])}<ellipse cx="32" cy="41" rx="5" ry="17" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M28 54L23 61M32 55V63M36 54L41 61" stroke="${d}" stroke-width="1.8"/>`
+ };
+  const antArt=`<path d="M22 34Q29 30 35 35L40 37 44 35Q51 29 59 35L57 43Q50 48 43 42L39 40 35 43Q28 49 21 43Z" fill="${c}" stroke="${d}" stroke-width="2"/><circle cx="15" cy="38" r="7" fill="${c}" stroke="${d}" stroke-width="2"/><circle cx="12.5" cy="36" r="1.2" fill="${l}"/><circle cx="17.5" cy="36" r="1.2" fill="${l}"/><path d="M23 36L35 35M24 42L34 41M45 36L55 35M45 42L54 41" stroke="${l}" stroke-width="1.2"/><circle cx="39" cy="38" r="2.5" fill="${d}"/><circle cx="43" cy="38" r="2" fill="${l}"/>`;
+  const flyArt=`<path d="M28 28Q12 7 7 14Q6 26 27 34Z" fill="${l}" fill-opacity=".9" stroke="${d}" stroke-width="1.8"/><path d="M36 28Q52 7 57 14Q58 26 37 34Z" fill="${l}" fill-opacity=".9" stroke="${d}" stroke-width="1.8"/><path d="M13 16L27 31M51 16L37 31" stroke="#fff" stroke-opacity=".8" stroke-width="1.4"/><ellipse cx="32" cy="38" rx="9" ry="13" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M26 40Q32 37 38 40M27 45Q32 42 37 45M29 50Q32 48 35 50" fill="none" stroke="${d}" stroke-width="1.5"/><ellipse cx="32" cy="23" rx="9" ry="7" fill="${d}" stroke="#fff" stroke-width="1"/><ellipse cx="26" cy="22" rx="3.5" ry="5" fill="#b94352" stroke="${d}" stroke-width="1"/><ellipse cx="38" cy="22" rx="3.5" ry="5" fill="#b94352" stroke="${d}" stroke-width="1"/><circle cx="26" cy="21" r="1" fill="#fff"/><circle cx="38" cy="21" r="1" fill="#fff"/>`;
+  const roachArt=`<ellipse cx="32" cy="41" rx="19" ry="21" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M32 22V60M17 34Q32 40 47 34M14 43Q32 50 50 43M17 52Q32 58 47 52" fill="none" stroke="${d}" stroke-width="1.8"/><path d="M32 24Q47 17 43 30L32 37 21 30Q17 17 32 24Z" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M25 23Q32 19 39 23" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="1.4"/><ellipse cx="32" cy="19" rx="6" ry="5" fill="${d}"/><circle cx="28" cy="19" r="1.4" fill="${l}"/><circle cx="36" cy="19" r="1.4" fill="${l}"/>`;
+  const butterflyArt=`<path d="M29 27Q22 4 8 5Q2 19 9 35Q15 44 29 40Z" fill="${c}" stroke="${d}" stroke-width="2.2"/><path d="M35 27Q42 4 56 5Q62 19 55 35Q49 44 35 40Z" fill="${c}" stroke="${d}" stroke-width="2.2"/><path d="M29 37Q17 34 10 41Q11 54 24 56Q30 52 31 42Z" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M35 37Q47 34 54 41Q53 54 40 56Q34 52 33 42Z" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M29 27L10 10M28 32L8 24M35 27L54 10M36 32L56 24M28 42L15 49M36 42L49 49" fill="none" stroke="${d}" stroke-width="1.2"/><circle cx="14" cy="23" r="3.4" fill="${l}" stroke="${d}" stroke-width="1.2"/><circle cx="50" cy="23" r="3.4" fill="${l}" stroke="${d}" stroke-width="1.2"/><circle cx="18" cy="45" r="2.4" fill="${d}"/><circle cx="46" cy="45" r="2.4" fill="${d}"/><ellipse cx="32" cy="37" rx="3.2" ry="17" fill="${d}"/><circle cx="32" cy="19" r="4.5" fill="${d}"/>`;
+  const mothArt=`<path d="M29 28Q24 5 5 8Q3 23 12 40Q18 47 30 40Z" fill="${c}" stroke="${d}" stroke-width="2.5"/><path d="M35 28Q40 5 59 8Q61 23 52 40Q46 47 34 40Z" fill="${c}" stroke="${d}" stroke-width="2.5"/><path d="M30 38Q21 34 13 43Q15 57 27 57Q31 51 32 43Z" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M34 38Q43 34 51 43Q49 57 37 57Q33 51 32 43Z" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M28 29L9 13M28 34L10 25M36 29L55 13M36 34L54 25M29 43L18 51M35 43L46 51" fill="none" stroke="${d}" stroke-width="1.8"/><ellipse cx="18" cy="31" rx="4" ry="6" fill="${l}" stroke="${d}" stroke-width="1.4"/><ellipse cx="46" cy="31" rx="4" ry="6" fill="${l}" stroke="${d}" stroke-width="1.4"/><ellipse cx="32" cy="39" rx="4.2" ry="18" fill="${d}"/><path d="M27 38Q32 34 37 38M28 43Q32 39 36 43M29 48Q32 44 35 48" fill="none" stroke="${l}" stroke-width="1.7"/><circle cx="32" cy="19" r="4.5" fill="${d}"/>`;
+  const termiteArt=`<ellipse cx="32" cy="39" rx="13" ry="17" fill="${l}" stroke="${d}" stroke-width="2"/><path d="M20 34H44M19 40H45M21 46H43" stroke="${d}" stroke-width="1.5"/><ellipse cx="32" cy="22" rx="8" ry="7" fill="${c}" stroke="${d}" stroke-width="2"/><path d="M28 18L24 13M36 18L40 13" stroke="${d}" stroke-width="1.5"/>${wingPair(['M28 25Q7 4 8 19Q12 30 28 33Z','M36 25Q57 4 56 19Q52 30 36 33Z'])}`;
+  const art=isAnt?antArt:isFly?flyArt:isRoach?roachArt:sp.cls===8?termiteArt:sp.cls===0?(isMoth?mothArt:butterflyArt):patterns[sp.cls];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="${sp.ja}">${legs}<g stroke="${d}" stroke-width="1.8" fill="none" stroke-linecap="round">${antenna}</g>${art}</svg>`;
+}
+function iconOf(sp){if(ICO[sp.id])return ICO[sp.id];const k=sp.cls===1&&/クワガタ|カブト/.test(sp.ja)?BK.find(x=>sp.ja.includes(x[0])):null;return ICO[sp.id]=k?bugSvg(k[1],k[2]):insectSvg(sp)}
+
+// [id,和名,学名,分類idx,レア,最小mm,最大mm,生息地,活動時期,説明,攻,防,体]  ※体長は概数の参考値
+const D=[
+[1,'モンシロチョウ','Pieris rapae',0,0,18,25,'草地・畑・市街地','3〜11月','キャベツ畑などで見られる白いチョウ。',4,3,10],
+[2,'ナナホシテントウ','Coccinella septempunctata',1,0,5,9,'草地・畑','3〜11月','アブラムシを食べる益虫。',4,5,9],
+[3,'クロオオアリ','Camponotus japonicus',2,0,7,12,'地面・公園','4〜10月','日本最大級の地上性のアリ。',5,4,10],
+[4,'オンブバッタ','Atractomorpha lata',4,0,25,42,'草地・庭','8〜11月','メスの背にオスが乗る姿が名の由来。',3,3,11],
+[5,'イエバエ','Musca domestica',7,0,5,8,'人家周辺','春〜秋','人の暮らしの近くにいるハエ。',3,2,8],
+[6,'ヒトスジシマカ','Aedes albopictus',7,0,4,5,'藪・住宅地','5〜10月','黒地に白い縞をもつ蚊。',3,2,7],
+[7,'ヤマトシロアリ','Reticulitermes speratus',8,0,4,6,'朽木・森林','通年（羽アリは春）','枯れ木を食べる社会性の昆虫。',3,4,9],
+[8,'アブラゼミ','Graptopsaltria nigrofuscata',6,0,55,60,'平地の林・公園','7〜9月','茶色い翅で、ジージーと鳴くセミ。',4,4,12],
+[9,'アゲハ','Papilio xuthus',0,1,30,40,'庭・林縁','4〜10月','ミカン類の葉で育つ大型のチョウ。',5,3,12],
+[10,'ナミテントウ','Harmonia axyridis',1,1,5,8,'草地・樹上','3〜11月','斑紋の変異が非常に多いテントウムシ。',5,5,10],
+[11,'トノサマバッタ','Locusta migratoria',4,1,35,65,'河原・草原','6〜11月','よく跳び、よく飛ぶ大型のバッタ。',6,4,13],
+[12,'クサギカメムシ','Halyomorpha halys',6,1,12,17,'林・果樹園','通年','刺激を受けると強いにおいを出す。',4,7,12],
+[13,'クロゴキブリ','Periplaneta fuliginosa',8,1,25,40,'人家周辺','5〜10月','日本の家屋で見られる大型のゴキブリ。',5,6,13],
+[14,'ニホンミツバチ','Apis cerana japonica',2,1,10,13,'林・草地','3〜11月','日本在来のミツバチ。',5,4,11],
+[15,'ミンミンゼミ','Hyalessa maculaticollis',6,1,55,63,'林・公園','7〜9月','ミーンミンと鳴く大型のセミ。',5,4,12],
+[16,'ハラビロカマキリ','Hierodula patellifera',3,2,50,70,'樹上・草地','8〜11月','腹部が幅広く、樹上で待ち伏せする。',9,5,14],
+[17,'チョウセンカマキリ','Tenodera angustipennis',3,2,70,95,'草地','8〜11月','細身で大型のカマキリ。',9,4,14],
+[18,'シオカラトンボ','Orthetrum albistylum',5,2,50,60,'池・水田','5〜10月','オスは成熟すると青白い粉を帯びる。',7,4,12],
+[19,'ゲンジボタル','Nipponoluciola cruciata',1,2,10,16,'清流','5〜7月','幼虫は水中でカワニナを食べる。',6,5,13],
+[20,'コクワガタ','Dorcus rectus',1,2,17,54,'雑木林','5〜10月上旬','身近で見られる小型のクワガタ。',8,6,15],
+[21,'ノコギリクワガタ','Prosopocoilus inclinatus',1,2,25,75,'雑木林','6〜9月','大あごがノコギリ状のクワガタ。',11,6,16],
+[22,'オオミズアオ','Actias aliena',0,2,25,35,'林','5〜8月','淡い青緑色の大型のガ。',5,5,14],
+[23,'モンカゲロウ','Ephemera strigata',9,2,15,20,'河川','5〜6月','成虫は短命で、水辺で羽化する。',4,3,12],
+[24,'ヒゲナガカワトビケラ','Stenopsyche marmorata',10,2,20,30,'河川','5〜10月','幼虫は川底に網を張る。',6,5,13],
+[25,'カブトムシ','Trypoxylus dichotomus',1,3,30,54,'雑木林','6〜8月','オスの角で戦う昆虫の王様。（体長は角を除く）',14,12,20],
+[26,'ミヤマクワガタ','Lucanus maculifemoratus',1,3,25,78,'山地の林','7〜8月','頭部の突起が特徴の山地のクワガタ。',13,9,17],
+[27,'ヤマトタマムシ','Chrysochroa fulgidissima',1,3,30,40,'林・神社','6〜8月','金属光沢に輝く美しい甲虫。',9,16,17],
+[28,'オオスズメバチ','Vespa mandarinia',2,3,27,45,'林・里山','5〜11月','日本最大のスズメバチ。',17,8,14],
+[29,'オニヤンマ','Anotogaster sieboldii',5,3,90,110,'山間の小川','6〜9月','日本最大級のトンボ。',15,8,16],
+[30,'オオクワガタ','Dorcus hopei binodulosus',1,4,21,77,'広葉樹林','6〜9月','「黒いダイヤ」と呼ばれるクワガタ。',17,17,23],
+[31,'オオムラサキ','Sasakia charonda',0,4,30,40,'雑木林','6〜8月','日本の国蝶。',13,12,22],
+[32,'コーカサスオオカブト','Chalcosoma chiron',1,4,50,130,'東南アジアの熱帯林','—','3本の角をもつ大型カブトムシ。',22,15,22],
+[33,'ギラファノコギリクワガタ','Prosopocoilus girafa',1,4,35,118,'東南アジアの熱帯林','—','世界最大級のクワガタ。',21,14,21],
+[34,'ヘラクレスオオカブト','Dynastes hercules',1,5,45,170,'中南米の熱帯林','—','世界最大級のカブトムシ。',27,22,30],
+[35,'ゴライアスオオツノハナムグリ','Goliathus goliatus',1,5,50,110,'アフリカの熱帯林','—','世界最大級の重量級の甲虫。',24,26,30]
+].map(r=>({id:r[0],ja:r[1],sci:r[2],cls:r[3],rar:r[4],min:r[5],max:r[6],hab:r[7],sea:r[8],desc:r[9],atk:r[10],def:r[11],hp:r[12]}));
+/* 拡張種：[和名,学名,分類,レア,最小mm,最大mm,生息地]。体長は概数の参考値。活動時期・説明は未確認のため未登録、能力値は自動算出 */
+[['キアゲハ','Papilio machaon',0,1,25,35,'草地・畑'],['アオスジアゲハ','Graphium sarpedon',0,2,20,30,'林縁・公園'],['カラスアゲハ','Papilio dehaanii',0,2,30,40,'林・山地'],['ジャコウアゲハ','Byasa alcinous',0,2,30,35,'林縁・河原'],['モンキチョウ','Colias erate',0,0,18,25,'草地'],['キタキチョウ','Eurema mandarina',0,0,15,20,'草地・林縁'],['ヤマトシジミ','Zizeeria maha',0,0,10,13,'草地・公園'],['ベニシジミ','Lycaena phlaeas',0,0,12,16,'草地'],['ルリシジミ','Celastrina argiolus',0,1,12,16,'林縁・公園'],['ツマグロヒョウモン','Argyreus hyperbius',0,1,25,30,'草地・公園'],['アカタテハ','Vanessa indica',0,1,22,28,'草地・林縁'],['キタテハ','Polygonia c-aureum',0,1,22,27,'草地・林縁'],['ルリタテハ','Kaniska canace',0,2,25,30,'林'],['イチモンジチョウ','Limenitis camilla',0,1,20,25,'林縁'],['コムラサキ','Apatura metis',0,2,25,30,'水辺の林'],['アサギマダラ','Parantica sita',0,3,30,35,'山地・林縁'],['ヒカゲチョウ','Lethe sicelis',0,0,20,25,'林'],['ジャノメチョウ','Minois dryas',0,1,25,30,'草地'],['イチモンジセセリ','Parnara guttatus',0,0,17,22,'草地・水田'],['オオスカシバ','Cephonodes hylas',0,2,25,35,'庭・林縁'],['エビガラスズメ','Agrius convolvuli',0,2,40,50,'畑・草地'],['ヤママユ','Antheraea yamamai',0,3,35,50,'雑木林'],['カイコ','Bombyx mori',0,1,20,25,'飼育（家畜化）'],['ホシホウジャク','Macroglossum pyrrhosticta',0,1,20,25,'庭・林縁'],
+['カナブン','Pseudotorynorrhina japonica',1,1,22,30,'雑木林'],['アオカナブン','Rhomborhina unicolor',1,1,25,30,'雑木林'],['シロテンハナムグリ','Protaetia orientalis',1,0,17,23,'林・花'],['ドウガネブイブイ','Anomala cuprea',1,0,17,22,'草地・林'],['セマダラコガネ','Exomala orientalis',1,0,8,12,'草地'],['ヒラタクワガタ','Dorcus titanus',1,3,25,75,'雑木林'],['スジクワガタ','Dorcus striatipennis',1,1,13,28,'山地の林'],['ネブトクワガタ','Aegus laevicollis',1,1,12,18,'雑木林'],['ヨツボシモンシデムシ','Nicrophorus quadripunctatus',1,1,15,23,'林'],['マイマイカブリ','Damaster blaptoides',1,2,40,65,'林・山地'],['ハンミョウ','Cicindela japonica',1,2,17,21,'林道'],['ゴマダラカミキリ','Anoplophora malasiaca',1,1,25,35,'林・街路樹'],['ミヤマカミキリ','Massicus raddei',1,2,35,55,'林'],['キボシカミキリ','Psacothea hilaris',1,1,15,30,'林・果樹'],['シロスジカミキリ','Batocera lineolata',1,3,40,55,'雑木林'],['ウスバカミキリ','Megopis sinica',1,2,30,65,'林'],['ヨモギハムシ','Chrysolina aurichalcea',1,0,6,10,'草地'],['ウリハムシ','Aulacophora indica',1,0,5,7,'畑'],['ニジュウヤホシテントウ','Henosepilachna vigintioctopunctata',1,0,6,8,'畑'],['カメノコテントウ','Aiolocaria hexaspilota',1,1,10,13,'林'],['キイロテントウ','Illeis koebelei',1,0,3,5,'草地・林'],['ヘイケボタル','Aquatica lateralis',1,2,7,10,'水田・湿地'],['ヒメボタル','Luciola parvula',1,2,7,9,'林'],['ウバタマムシ','Chalcophora japonica',1,2,25,40,'松林'],['ゲンゴロウ','Cybister japonicus',1,3,34,42,'池沼'],['ガムシ','Hydrophilus acuminatus',1,2,33,40,'池沼'],['ミズスマシ','Gyrinus japonicus',1,1,6,8,'池・水田'],['ネプチューンオオカブト','Dynastes neptunus',1,5,50,150,'熱帯山地林'],['アクタエオンゾウカブト','Megasoma actaeon',1,4,50,130,'熱帯林'],['サタンオオカブト','Dynastes satanas',1,4,50,80,'熱帯山地林'],['ニジイロクワガタ','Phalacrognathus muelleri',1,4,25,65,'熱帯林'],['アトラスオオカブト','Chalcosoma atlas',1,4,50,130,'熱帯林'],['ゴホンヅノカブト','Eupatorus gracilicornis',1,3,35,65,'熱帯林'],['パプアキンイロクワガタ','Lamprima adolphinae',1,3,20,35,'熱帯林'],
+['キイロスズメバチ','Vespa simillima',2,2,17,28,'林・市街地'],['コガタスズメバチ','Vespa analis',2,2,20,30,'林・市街地'],['セグロアシナガバチ','Polistes jokahamae',2,1,20,26,'林縁・人家'],['キアシナガバチ','Polistes rothneyi',2,1,17,26,'林縁・人家'],['キムネクマバチ','Xylocopa appendiculata',2,1,20,25,'林・公園'],['セイヨウミツバチ','Apis mellifera',2,0,12,15,'草地・養蜂場'],['クロスズメバチ','Vespula flaviceps',2,1,10,15,'林・里山'],['ムネアカオオアリ','Camponotus obscuripes',2,0,7,12,'林・草地'],['クロヤマアリ','Formica japonica',2,0,4,6,'草地・公園'],['トビイロシワアリ','Tetramorium tsushimae',2,0,2,3,'地面・公園'],['アミメアリ','Pristomyrmex punctatus',2,0,2.5,3.5,'地面・林縁'],['サムライアリ','Polyergus samurai',2,2,5,7,'草地・林縁'],['キゴシジガバチ','Sceliphron madraspatanum',2,1,20,28,'人家・林縁'],
+['オオカマキリ','Tenodera aridifolia',3,1,68,105,'草地・田畑'],['コカマキリ','Statilia maculata',3,1,40,70,'草地'],['ウスバカマキリ','Mantis religiosa',3,2,50,75,'草地'],['ハナカマキリ','Hymenopus coronatus',3,4,25,70,'東南アジアの熱帯林'],['デビルズフラワーマンティス','Idolomantis diabolica',3,5,100,130,'東アフリカの乾燥林'],
+['ショウリョウバッタ','Acrida cinerea',4,1,40,80,'草地'],['ツチイナゴ','Patanga japonica',4,1,50,70,'草地・林縁'],['コバネイナゴ','Oxya yezoensis',4,0,28,40,'水田・草地'],['エンマコオロギ','Teleogryllus emma',4,0,25,35,'草地・人家周辺'],['ツヅレサセコオロギ','Velarifictorus micado',4,0,14,20,'草地・人家周辺'],['スズムシ','Meloimorpha japonica',4,1,17,25,'草地'],['マツムシ','Xenogryllus marmoratus',4,1,20,27,'草地'],['カンタン','Oecanthus longicauda',4,1,11,15,'草地'],['クツワムシ','Mecopoda niponensis',4,2,50,60,'草地・林縁'],['ヒガシキリギリス','Gampsocleis mikado',4,1,28,40,'草地'],['ケラ','Gryllotalpa orientalis',4,1,30,35,'湿った土中'],['マダラカマドウマ','Diestrammena japanica',4,0,20,35,'林・洞窟'],['ヤブキリ','Tettigonia orientalis',4,1,30,45,'草地・林縁'],
+['ギンヤンマ','Anax parthenope',5,2,60,70,'池・沼'],['ウスバキトンボ','Pantala flavescens',5,0,45,50,'開けた草地・水田'],['アキアカネ','Sympetrum frequens',5,0,35,45,'水田・山地'],['ナツアカネ','Sympetrum darwinianum',5,0,33,45,'水田・池'],['ノシメトンボ','Sympetrum infuscatum',5,0,40,48,'池・水田'],['オオシオカラトンボ','Orthetrum melania',5,1,50,62,'渓流・池'],['ハグロトンボ','Calopteryx atrata',5,2,57,67,'流れの緩い川'],['ミヤマカワトンボ','Psolodesmus mandarinus',5,3,55,70,'山間の渓流'],['ムカシトンボ','Epiophlebia superstes',5,4,50,65,'山地の渓流'],['アジアイトトンボ','Ischnura asiatica',5,0,25,30,'池・水田'],['オツネントンボ','Sympecma paedisca',5,1,35,40,'池・林縁'],['ヤブヤンマ','Polycanthagyna melanictera',5,2,80,90,'池・林縁'],['コオニヤンマ','Sieboldius albardae',5,2,60,80,'河川'],['ショウジョウトンボ','Crocothemis servilia',5,1,40,50,'池・水田'],['コシアキトンボ','Pseudothemis zonata',5,1,45,55,'池・沼'],['チョウトンボ','Rhyothemis fuliginosa',5,3,30,40,'池・沼'],
+['ニイニイゼミ','Platypleura kaempferi',6,0,30,40,'平地の林・公園'],['クマゼミ','Cryptotympana facialis',6,2,55,70,'平地の林・公園'],['ヒグラシ','Tanna japonensis',6,1,30,40,'林'],['ツクツクボウシ','Meimuna opalifera',6,1,40,50,'林・公園'],['エゾゼミ','Lyristes bihamatus',6,2,50,65,'山地の林'],['ミズカマキリ','Ranatra chinensis',6,2,40,50,'池沼'],['タガメ','Kirkaldyia deyrollei',6,4,48,65,'水田・池沼'],['コオイムシ','Appasus japonicus',6,2,17,20,'水田・池沼'],['アメンボ','Aquarius paludum',6,0,11,16,'池・水田'],['マツモムシ','Notonecta triguttata',6,1,11,14,'池沼'],['アカスジカメムシ','Graphosoma rubrolineatum',6,1,10,12,'草地'],['ツマグロオオヨコバイ','Bothrogonia japonica',6,1,10,13,'草地・林縁'],['ミミズク','Ledra auditura',6,2,14,18,'林'],['ヨコヅナサシガメ','Agriosphodrus dohrni',6,2,16,24,'公園・樹上'],
+['ホソヒラタアブ','Episyrphus balteatus',7,0,9,12,'草地・庭'],['アカウシアブ','Tabanus chrysurus',7,1,20,25,'林・牧場'],['シオヤアブ','Promachus yesonicus',7,2,22,27,'草地'],['キイロショウジョウバエ','Drosophila melanogaster',7,0,2,3,'人家周辺'],['アカイエカ','Culex pipiens',7,0,4,6,'人家周辺'],['ビロウドツリアブ','Bombylius major',7,2,8,12,'草地・林縁'],['オオハナアブ','Phytomia zonata',7,1,12,15,'草地・花'],['ヒロズキンバエ','Lucilia sericata',7,0,6,10,'人家周辺'],
+['チャバネゴキブリ','Blattella germanica',8,0,10,15,'人家'],['ワモンゴキブリ','Periplaneta americana',8,1,30,40,'人家'],['ヤマトゴキブリ','Periplaneta japonica',8,1,25,35,'林・人家'],['イエシロアリ','Coptotermes formosanus',8,0,4,5,'木造建築・朽木'],
+['フタバカゲロウ','Cloeon dipterum',9,1,6,10,'池・水辺'],
+['ナナフシモドキ','Ramulus mikado',11,1,60,100,'林・草地'],['チャンオオナナフシ','Phobaeticus chani',11,5,300,360,'ボルネオの熱帯林'],['コノハムシ','Phyllium giganteum',11,4,60,110,'東南アジアの熱帯林'],
+['ハマベハサミムシ','Anisolabis maritima',12,0,20,30,'海岸'],
+['ウスバカゲロウ','Hagenomyia micans',13,1,35,45,'林縁'],['ヨツボシクサカゲロウ','Chrysoperla nipponensis',13,1,9,13,'草地・林縁'],['ヘビトンボ','Protohermes grandis',13,2,40,60,'渓流周辺'],
+['カミムラカワゲラ','Kamimuria tibialis',14,1,20,30,'河川'],
+['クロアゲハ','Papilio protenor',0,2,28,35,'林縁・庭'],['ナガサキアゲハ','Papilio memnon',0,2,35,45,'林縁・庭'],['モンキアゲハ','Papilio helenus',0,2,30,40,'林縁'],['スジグロシロチョウ','Pieris melete',0,0,16,22,'林縁・草地'],['ウラギンシジミ','Curetis acuta',0,1,15,20,'林縁'],['ヒメアカタテハ','Vanessa cardui',0,1,20,25,'草地'],['テングチョウ','Libythea lepita',0,1,15,20,'林縁'],['ゴマダラチョウ','Hestina persimilis',0,2,25,30,'雑木林'],['スミナガシ','Dichorragia nesimachus',0,3,25,30,'林'],['ヒオドシチョウ','Nymphalis xanthomelas',0,2,25,30,'林・山地'],['オオミスジ','Neptis alwina',0,2,25,30,'林縁'],['シンジュサン','Samia cynthia',0,2,30,40,'林縁・街路樹'],['クスサン','Saturnia japonica',0,2,35,45,'林'],
+['ルリボシカミキリ','Rosalia batesi',1,3,16,29,'山地の林'],['トラフカミキリ','Xylotrechus chinensis',1,1,15,25,'林・果樹園'],['コアオハナムグリ','Gametis jucunda',1,0,11,14,'草地・花'],['ヒメマルカツオブシムシ','Anthrenus verbasci',1,0,2,3,'人家・花'],
+['ミヤマアカネ','Sympetrum pedemontanum',5,1,33,40,'水田・小川'],['ウチワヤンマ','Sinictinogomphus clavatus',5,2,70,80,'池・沼'],['ハラビロトンボ','Lyriothemis pachygastra',5,1,33,40,'湿地・池'],
+['オオゴキブリ','Panesthia angustipennis',8,2,30,40,'朽ち木のある林'],['ウマオイ','Hexacentrus japonicus',4,1,30,40,'草地・林縁'],['サバクトビバッタ','Schistocerca gregaria',4,2,40,60,'北アフリカ・中東の乾燥地'],
+['クロヒカゲ','Lethe diana',0,0,20,25,'林'],['サトキマダラヒカゲ','Neope goschkevitschii',0,0,20,25,'林'],['ツバメシジミ','Everes argiades',0,0,10,14,'草地'],['ウラナミシジミ','Lampides boeticus',0,0,12,16,'草地・畑'],['ムラサキシジミ','Arhopala japonica',0,1,14,18,'林・公園'],['アオバセセリ','Choaspes benjaminii',0,2,20,25,'林縁'],['ダイミョウセセリ','Daimio tethys',0,0,15,20,'林縁・草地'],['ミヤマカラスアゲハ','Papilio maackii',0,3,30,40,'山地の林'],['ヒメウラナミジャノメ','Ypthima argus',0,0,12,16,'草地・林縁'],['ベニスズメ','Deilephila elpenor',0,2,25,35,'草地・林縁'],['ヒメジャノメ','Mycalesis gotama',0,0,17,20,'林縁・草地'],['ウスバシロチョウ','Parnassius glacialis',0,2,20,25,'草地・山地'],
+['オオセンチコガネ','Geotrupes auratus',1,1,16,24,'林・草地'],['センチコガネ','Phelotrupes laevistriatus',1,0,14,20,'林・草地'],['コカブトムシ','Eophileurus chinensis',1,1,17,24,'雑木林・朽木'],['ミイデラゴミムシ','Pheropsophus jessoensis',1,2,11,18,'水辺・草地'],['アオハナムグリ','Cetonia roelofsi',1,0,14,18,'草地・花'],['オオゾウムシ','Sipalinus gigas',1,1,12,25,'林・朽木'],['アオドウガネ','Anomala albopilosa',1,0,17,22,'草地・林'],['タイタンオオウスバカミキリ','Titanus giganteus',1,5,100,167,'アマゾンの熱帯林'],['エレファスゾウカブト','Megasoma elephas',1,4,55,130,'中米の熱帯林'],
+['トビイロケアリ','Lasius japonicus',2,0,3,4,'地面・公園'],['オオハリアリ','Brachyponera chinensis',2,1,3,5,'林・人家周辺'],['アルゼンチンアリ','Linepithema humile',2,0,2,3,'市街地・公園'],['ヒアリ','Solenopsis invicta',2,2,2,6,'草地・市街地（外来種）'],['ツムギアリ','Oecophylla smaragdina',2,2,5,10,'東南アジアの熱帯林・樹上'],
+['ヒシバッタ','Tetrix japonica',4,0,8,10,'草地・水辺'],['カワラバッタ','Eusphingonotus japonicus',4,2,30,40,'河原'],['クルマバッタ','Gastrimargus marmoratus',4,1,40,65,'河原・草地'],['カネタタキ','Ornebius kanetataki',4,1,6,9,'林・公園'],['マダラスズ','Dianemobius nigrofasciatus',4,0,6,9,'草地'],['ミツカドコオロギ','Loxoblemmus doenitzi',4,0,14,19,'草地'],
+['オナガサナエ','Melligomphus viridicostus',5,2,58,65,'河川'],['リスアカネ','Sympetrum risi',5,1,35,42,'池・湿地'],['ヒメアカネ','Sympetrum parvulum',5,1,25,33,'湿地・池'],['コノシメトンボ','Sympetrum baccha',5,0,35,45,'池・水田'],['ホソミイトトンボ','Aciagrion migratum',5,1,28,35,'池・湿地'],['クロイトトンボ','Paracercion calamorum',5,0,30,35,'池・水田'],['ルリボシヤンマ','Aeshna juncea',5,3,70,80,'高地の池沼'],['カトリヤンマ','Gynacantha japonica',5,2,65,75,'林縁・池'],
+['ツマグロヨコバイ','Nephotettix cincticeps',6,0,5,6,'水田・草地'],['ワタアブラムシ','Aphis gossypii',6,0,1,2,'畑・庭'],['ツチカメムシ','Macroscytus japonensis',6,0,8,10,'地面・草地'],['アオクサカメムシ','Nezara antennata',6,0,12,16,'草地・畑'],['ミナミアオカメムシ','Nezara viridula',6,0,12,16,'畑・草地'],['マルカメムシ','Megacopta punctatissima',6,0,4,6,'草地・畑'],
+['ニクバエ','Sarcophaga peregrina',7,0,8,14,'人家周辺・草地'],
+['パラワンオオヒラタクワガタ','Dorcus titanus palawanicus',1,4,45,105,'フィリピン・パラワン島の熱帯林'],['マンディブラリスフタマタクワガタ','Hexarthrius mandibularis',1,4,40,105,'東南アジアの熱帯林'],['グランディスオオクワガタ','Dorcus grandis',1,4,30,85,'東南アジアの山地林'],['タランドゥスツヤクワガタ','Mesotopus tarandus',1,3,35,80,'アフリカの熱帯林'],['オオベッコウバチ','Cyphononyx dorsalis',2,3,20,30,'林縁・草地'],
+['アルキデスオオヒラタクワガタ','Dorcus alcides',1,3,35,90,'東南アジアの熱帯林'],['アンタエウスオオクワガタ','Dorcus antaeus',1,3,35,90,'南〜東南アジアの山地林'],['アカアシクワガタ','Dorcus rubrofemoratus',1,2,17,50,'山地の林'],['フォルスターフタマタクワガタ','Hexarthrius forsteri',1,3,40,95,'東南アジアの熱帯林'],['ディディエールシカクワガタ','Rhaetulus didieri',1,3,30,70,'東南アジアの熱帯林'],['ヘルマンミヤマクワガタ','Lucanus hermani',1,3,35,70,'アジアの山地林'],['メタリフェルホソアカクワガタ','Cyclommatus metallifer',1,3,20,70,'東南アジアの熱帯林'],['ブルマイスターツヤクワガタ','Odontolabis burmeisteri',1,3,40,90,'東南アジアの熱帯林'],['アルケスツヤクワガタ','Odontolabis alces',1,3,35,80,'東南アジアの熱帯林'],['マキシムスマルバネクワガタ','Neolucanus maximus',1,3,35,60,'アジアの山地林'],
+['ヒメカブト','Xylotrupes gideon',1,1,35,70,'東南アジアの熱帯林'],['モーレンカンプオオカブト','Chalcosoma moellenkampi',1,4,50,120,'東南アジアの熱帯林'],['マルスゾウカブト','Megasoma mars',1,4,50,110,'中南米の熱帯林'],['ギアスゾウカブト','Megasoma gyas',1,4,50,100,'中南米の熱帯林'],['アヌビスゾウカブト','Megasoma anubis',1,4,50,100,'中南米の熱帯林'],['ヒルスシロカブト','Dynastes hyllus',1,3,45,80,'中米の林'],['ティティウスシロカブト','Dynastes tityus',1,3,35,70,'北米東部の林'],['グラントシロカブト','Dynastes grantii',1,3,40,70,'北米西部の山地林'],['マヤシロカブト','Dynastes maya',1,3,40,70,'中米の山地林'],['サンボンヅノカブト','Debeckius beccarii',1,2,35,65,'ニューギニア島の熱帯林'],
+['マメコガネ','Popillia japonica',1,0,9,13,'草地・畑'],['クロカミキリ','Spondylis buprestoides',1,1,15,25,'松林'],['モモブトハムシ','Sagra femorata',1,2,12,20,'東南アジアの林'],['バイオリンムシ','Mormolyce phyllodes',1,3,60,100,'東南アジアの熱帯林'],
+['サカダチコノハナナフシ','Extatosoma tiaratum',11,4,90,200,'オーストラリアの林'],['メダマカレハカマキリ','Deroplatys desiccata',3,4,60,90,'東南アジアの熱帯林'],['ヤエヤマクマゼミ','Cryptotympana yaeyamana',6,2,50,60,'八重山諸島の林'],['チッチゼミ','Cicadetta radiator',6,1,18,25,'山地の林'],['ナナホシキンカメムシ','Calliphara nobilis',6,2,15,20,'南西諸島などの林'],['オオルリボシヤンマ','Aeshna nigroflava',5,2,70,85,'池沼'],
+['ニシキオオツバメガ','Chrysiridia rhipheus',0,4,25,35,'マダガスカルの林'],['クジャクチョウ','Aglais io',0,1,20,25,'林縁・草地'],['オオゴマダラ','Idea leuconoe',0,3,35,45,'南西諸島の林'],['ブルーモルフォ','Morpho menelaus',0,4,35,45,'中南米の熱帯林'],['アレクサンドラトリバネアゲハ','Ornithoptera alexandrae',0,5,60,80,'パプアニューギニアの熱帯林'],['ゴライアストリバネアゲハ','Ornithoptera goliath',0,4,40,60,'ニューギニア島の熱帯林'],
+['オオモンシロチョウ','Pieris brassicae',0,1,25,35,'草地・畑'],['イシガケチョウ','Cyrestis thyodamas',0,2,25,30,'林縁・林道'],['ヒメギフチョウ','Luehdorfia puziloi',0,3,25,35,'山地の林'],['ツマベニチョウ','Hebomoia glaucippe',0,3,50,65,'南西諸島の林縁'],
+['オオヒラタシデムシ','Eusilpha japonica',1,1,20,35,'林・草地'],['ノコギリカミキリ','Prionus insularis',1,1,25,45,'林'],['アカガネサルハムシ','Chrysochus chinensis',1,1,6,8,'草地・林縁'],
+['クロマルハナバチ','Bombus ignitus',2,1,15,22,'草地・花'],['ヒメカマキリ','Acromantis japonica',3,2,25,35,'林縁・草地'],
+['キリギリス','Gampsocleis buergeri',4,1,30,40,'草地'],['クビキリギス','Euconocephalus thunbergii',4,1,45,60,'草地・林縁'],
+['ハッチョウトンボ','Nannophya pygmaea',5,2,17,22,'湿地'],['カワトンボ','Mnais costalis',5,1,40,50,'渓流・水辺'],['ベッコウトンボ','Libellula angelina',5,4,35,45,'湿地・池沼'],
+['タイコウチ','Laccotrephes japonensis',6,2,30,35,'水田・池沼'],['オオキンカメムシ','Eucorysses grandis',6,3,20,25,'南西諸島の林'],
+['オオクロバエ','Calliphora lata',7,0,8,14,'人家周辺・草地'],
+['シロハラコカゲロウ','Baetis thermicus',9,1,6,9,'河川'],['ニンギョウトビケラ','Goera japonica',10,1,12,18,'河川・渓流'],['トゲナナフシ','Neohirasea japonica',11,2,50,70,'林・林縁'],['オオハサミムシ','Labidura riparia japonica',12,1,25,35,'海岸・草地'],['ホシウスバカゲロウ','Myrmeleon formicarius',13,2,35,45,'砂地・林縁'],['オオヤマカワゲラ','Oyamia lugubris',14,2,30,40,'山地の渓流']
+].forEach((r,i)=>{const b=[5,8,11,15,20,25][r[3]],t=(i*7+r[0].length)%3;D.push({id:D.length+1,ja:r[0],sci:r[1],cls:r[2],rar:r[3],min:r[4],max:r[5],hab:r[6],sea:'—（未登録）',desc:CL[r[2]]+'の昆虫。詳しい解説は今後追加予定です。',atk:b+(t===0?3:0)+(r[5]>=60?2:0),def:b+(t===1?3:0),hp:b+5+(t===2?4:0)+(r[5]>80?2:0)})});
+const VERIFIED=[
+['オオカバマダラ','Danaus plexippus',0,0,8,80,'\u672a\u767b\u9332'],
+['ヨーロッパアカタテハ','Vanessa atalanta',0,0,8,80,'\u672a\u767b\u9332'],
+['ヒョウモンドクチョウ','Dione vanillae',0,0,8,80,'\u672a\u767b\u9332'],
+['メスグロトラフアゲハ','Papilio glaucus',0,0,8,80,'\u672a\u767b\u9332'],
+['メスクロキアゲハ','Papilio polyxenes',0,0,8,80,'\u672a\u767b\u9332'],
+['イカルスヒメシジミ','Polyommatus icarus',0,0,8,80,'\u672a\u767b\u9332'],
+['キマダラジャノメ','Pararge aegeria',0,0,8,80,'\u672a\u767b\u9332'],
+['ルリオビイチモンジ','Limenitis arthemis',0,1,8,80,'\u672a\u767b\u9332'],
+['コツノセセリ','Hylephila phyleus',0,1,8,80,'\u672a\u767b\u9332'],
+['マキバジャノメ','Maniola jurtina',0,1,8,80,'\u672a\u767b\u9332'],
+['アメリカタテハモドキ','Junonia coenia',0,1,8,80,'\u672a\u767b\u9332'],
+['アオジャコウアゲハ','Battus philenor',0,1,8,80,'\u672a\u767b\u9332'],
+['キベリタテハ','Nymphalis antiopa',0,1,8,80,'\u672a\u767b\u9332'],
+['コヒオドシ','Aglais urticae',0,1,8,80,'\u672a\u767b\u9332'],
+['ハイイロカラスシジミ','Strymon melinus',0,2,8,80,'\u672a\u767b\u9332'],
+['エゾスジグロシロチョウ','Pieris napi',0,2,8,80,'\u672a\u767b\u9332'],
+['シータテハ','Polygonia c-album',0,2,8,80,'\u672a\u767b\u9332'],
+['マイマイガ','Lymantria dispar',0,2,8,80,'\u672a\u767b\u9332'],
+['ポリフェムスヤママユ','Antheraea polyphemus',0,2,8,80,'\u672a\u767b\u9332'],
+['アメリカシロヒトリ','Hyphantria cunea',0,2,8,80,'\u672a\u767b\u9332'],
+['ヴァージニアヒメアカタテハ','Vanessa virginiensis',0,3,8,80,'\u672a\u767b\u9332'],
+['キシタゴマダラヒトリ','Estigmene acrea',0,3,8,80,'\u672a\u767b\u9332'],
+['ジョオウマダラ','Danaus gilippus',0,3,8,80,'\u672a\u767b\u9332'],
+['オオアメリカモンキチョウ','Colias eurytheme',0,3,8,80,'\u672a\u767b\u9332'],
+['ミドリヒョウモン','Argynnis paphia',0,3,8,80,'\u672a\u767b\u9332'],
+['アメリカオオミズアオ','Actias luna',0,3,8,80,'\u672a\u767b\u9332'],
+['チャイロヒメヒカゲ','Coenonympha pamphilus',0,3,8,80,'\u672a\u767b\u9332'],
+['クスノキアゲハ','Papilio troilus',0,4,8,80,'\u672a\u767b\u9332'],
+['アメリカオビカレハ','Malacosoma americana',0,4,8,80,'\u672a\u767b\u9332'],
+['ヤマキチョウ','Gonepteryx rhamni',0,4,8,80,'\u672a\u767b\u9332'],
+['ガマキンウワバ','Autographa gamma',0,4,8,80,'\u672a\u767b\u9332'],
+['ギモンフタテハ','Polygonia interrogationis',0,4,8,80,'\u672a\u767b\u9332'],
+['ワタリオオキチョウ','Phoebis sennae',0,4,8,80,'\u672a\u767b\u9332'],
+['ヨーロッパシロジャノメ','Melanargia galathea',0,4,8,80,'\u672a\u767b\u9332'],
+['ウスベニタテハ','Anartia jatrophae',0,5,8,80,'\u672a\u767b\u9332'],
+['カバイロイチモンジ','Limenitis archippus',0,5,8,80,'\u672a\u767b\u9332'],
+['ホウジャク','Macroglossum stellatarum',0,5,8,80,'\u672a\u767b\u9332'],
+['アメリカモンキチョウ','Colias philodice',0,5,8,80,'\u672a\u767b\u9332'],
+['チョウセンジャノメ','Aphantopus hyperantus',0,5,8,80,'\u672a\u767b\u9332'],
+['カバマダラ','Danaus chrysippus',0,5,8,80,'\u672a\u767b\u9332'],
+['キンイロハナムグリ','Cetonia aurata',1,0,2,100,'\u672a\u767b\u9332'],
+['ヨーロッパミヤマクワガタ','Lucanus cervus',1,0,2,100,'\u672a\u767b\u9332'],
+['パラレリピペドゥスオオクワガタ','Dorcus parallelipipedus',1,0,2,100,'\u672a\u767b\u9332'],
+['フタモンテントウ','Adalia bipunctata',1,0,2,100,'\u672a\u767b\u9332'],
+['ヨーロッパサイカブト','Oryctes nasicornis',1,0,2,100,'\u672a\u767b\u9332'],
+['キベリコツノヒシムネハナムグリ','Cotinis mutabilis',1,0,2,100,'\u672a\u767b\u9332'],
+['カプレオルスミヤマクワガタ','Lucanus capreolus',1,1,2,100,'\u672a\u767b\u9332'],
+['コロラドハムシ','Leptinotarsa decemlineata',1,1,2,100,'\u672a\u767b\u9332'],
+['キンケクチブトゾウムシ','Otiorhynchus sulcatus',1,1,2,100,'\u672a\u767b\u9332'],
+['キソコマベニハナカミキリ','Stenurella melanura',1,1,2,100,'\u672a\u767b\u9332'],
+['ダンダラテントウ','Cheilomenes sexmaculata',1,1,2,100,'\u672a\u767b\u9332'],
+['ドロノキハムシ','Chrysomela populi',1,1,2,100,'\u672a\u767b\u9332'],
+['シロジュウロクホシテントウ','Halyzia sedecimguttata',1,2,2,100,'\u672a\u767b\u9332'],
+['ハイイロテントウ','Olla v-nigrum',1,2,2,100,'\u672a\u767b\u9332'],
+['クプレアツヤハナムグリ','Protaetia cuprea',1,2,2,100,'\u672a\u767b\u9332'],
+['ヤマイチテントウ','Coccinella transversalis',1,2,2,100,'\u672a\u767b\u9332'],
+['クモガタテントウ','Psyllobora vigintimaculata',1,2,2,100,'\u672a\u767b\u9332'],
+['シロジュウシホシテントウ','Calvia quatuordecimguttata',1,2,2,100,'\u672a\u767b\u9332'],
+['ヒルタケブカハナムグリ','Tropinota hirta',1,3,2,100,'\u672a\u767b\u9332'],
+['ムラサキオオツチハンミョウ','Meloe violaceus',1,3,2,100,'\u672a\u767b\u9332'],
+['カラフトヨツスジハナカミキリ','Leptura quadrifasciata',1,3,2,100,'\u672a\u767b\u9332'],
+['アカビロウドコガネ','Maladera formosae',1,3,2,100,'\u672a\u767b\u9332'],
+['ヤナギルリハムシ','Plagiodera versicolora',1,3,2,100,'\u672a\u767b\u9332'],
+['カタボシテントウ','Coelophora inaequalis',1,3,2,100,'\u672a\u767b\u9332'],
+['オオツマキアオジョウカイモドキ','Malachius bipustulatus',1,4,2,100,'\u672a\u767b\u9332'],
+['クラヤミハムシ','Timarcha tenebricosa',1,4,2,100,'\u672a\u767b\u9332'],
+['アオナガタマムシ','Agrilus planipennis',1,4,2,100,'\u672a\u767b\u9332'],
+['ツマアカオオヒメテントウ','Cryptolaemus montrouzieri',1,4,2,100,'\u672a\u767b\u9332'],
+['アカガネオサムシ','Carabus granulatus',1,4,2,100,'\u672a\u767b\u9332'],
+['アロエウスミツノカブト','Strategus aloeus',1,4,2,100,'\u672a\u767b\u9332'],
+['クリイロクチブトゾウムシ','Cyrtepistomus castaneus',1,5,2,100,'\u672a\u767b\u9332'],
+['ムナグロメリケンハナムグリ','Euphoria kernii',1,5,2,100,'\u672a\u767b\u9332'],
+['オビカツオブシムシ','Dermestes lardarius',1,5,2,100,'\u672a\u767b\u9332'],
+['ビロウドヒラタシデムシ','Oiceoptoma thoracicum',1,5,2,100,'\u672a\u767b\u9332'],
+['アオカメノコハムシ','Cassida rubiginosa',1,5,2,100,'\u672a\u767b\u9332'],
+['セイヨウオオマルハナバチ','Bombus terrestris',2,0,2,50,'\u672a\u767b\u9332'],
+['モンスズメバチ','Vespa crabro',2,0,2,50,'\u672a\u767b\u9332'],
+['ヨーロッパクロスズメバチ','Vespula germanica',2,0,2,50,'\u672a\u767b\u9332'],
+['アメリカジガバチ','Sceliphron caementarium',2,0,2,50,'\u672a\u767b\u9332'],
+['ツマアカスズメバチ','Vespa velutina',2,0,2,50,'\u672a\u767b\u9332'],
+['キオビクロスズメバチ','Vespula vulgaris',2,1,2,50,'\u672a\u767b\u9332'],
+['アカケブカアリバチ','Dasymutilla occidentalis',2,1,2,50,'\u672a\u767b\u9332'],
+['ソノーラクマバチ','Xylocopa sonorina',2,1,2,50,'\u672a\u767b\u9332'],
+['ゴキブリヤセバチ','Evania appendigaster',2,1,2,50,'\u672a\u767b\u9332'],
+['キタアトジマコハナバチ','Halictus rubicundus',2,2,2,50,'\u672a\u767b\u9332'],
+['ヒゲナガアメイロアリ','Paratrechina longicornis',2,2,2,50,'\u672a\u767b\u9332'],
+['ケブカコシブトハナバチ','Anthophora plumipes',2,2,2,50,'\u672a\u767b\u9332'],
+['オオミツバチ','Apis dorsata',2,2,2,50,'\u672a\u767b\u9332'],
+['オオハキリバチ','Megachile sculpturalis',2,3,2,50,'\u672a\u767b\u9332'],
+['アシナガキアリ','Anoplolepis gracilipes',2,3,2,50,'\u672a\u767b\u9332'],
+['クロバネセイボウ','Chrysis fuscipennis',2,3,2,50,'\u672a\u767b\u9332'],
+['クロコツブアリ','Brachymyrmex patagonicus',2,3,2,50,'\u672a\u767b\u9332'],
+['キイロクシケアリ','Myrmica rubra',2,4,2,50,'\u672a\u767b\u9332'],
+['コミツバチ','Apis florea',2,4,2,50,'\u672a\u767b\u9332'],
+['カブラハバチ','Athalia rosae',2,4,2,50,'\u672a\u767b\u9332'],
+['カラフトクロオオアリ','Camponotus herculeanus',2,4,2,50,'\u672a\u767b\u9332'],
+['アワテコヌカアリ','Tapinoma melanocephalum',2,5,2,50,'\u672a\u767b\u9332'],
+['アカカミアリ','Solenopsis geminata',2,5,2,50,'\u672a\u767b\u9332'],
+['フタモンアシナガバチ','Polistes chinensis',2,5,2,50,'\u672a\u767b\u9332'],
+['サトジガバチ','Ammophila sabulosa',2,5,2,50,'\u672a\u767b\u9332'],
+['ナンヨウカマキリ','Orthodera ministralis',3,0,15,140,'\u672a\u767b\u9332'],
+['チョウセンヤブキリ','Tettigonia viridissima',4,0,4,100,'\u672a\u767b\u9332'],
+['カラフトキリギリス','Decticus verrucivorus',4,0,4,100,'\u672a\u767b\u9332'],
+['カマドコオロギ','Gryllodes sigillatus',4,0,4,100,'\u672a\u767b\u9332'],
+['クラズミウマ','Tachycines asynamorus',4,1,4,100,'\u672a\u767b\u9332'],
+['キタササキリ','Conocephalus fuscus',4,1,4,100,'\u672a\u767b\u9332'],
+['フタホシコオロギ','Gryllus bimaculatus',4,2,4,100,'\u672a\u767b\u9332'],
+['イボバッタ','Trilophidia annulata',4,2,4,100,'\u672a\u767b\u9332'],
+['ツユムシ','Phaneroptera falcata',4,2,4,100,'\u672a\u767b\u9332'],
+['シタベニオオバッタ','Tropidacris cristata',4,3,4,100,'\u672a\u767b\u9332'],
+['ササキリ','Conocephalus melaenus',4,3,4,100,'\u672a\u767b\u9332'],
+['タイワンオオバッタ','Chondracris rosea',4,4,4,100,'\u672a\u767b\u9332'],
+['ヨーロッパイエコオロギ','Acheta domesticus',4,4,4,100,'\u672a\u767b\u9332'],
+['セスジツユムシ','Ducetia japonica',4,4,4,100,'\u672a\u767b\u9332'],
+['ホシササキリ','Conocephalus maculatus',4,5,4,100,'\u672a\u767b\u9332'],
+['モリバッタ','Traulia ornata',4,5,4,100,'\u672a\u767b\u9332'],
+['アメリカギンヤンマ','Anax junius',5,0,20,120,'\u672a\u767b\u9332'],
+['マンシュウイトトンボ','Ischnura elegans',5,0,20,120,'\u672a\u767b\u9332'],
+['ヨツボシトンボ','Libellula quadrimaculata',5,0,20,120,'\u672a\u767b\u9332'],
+['スナアカネ','Sympetrum fonscolombii',5,0,20,120,'\u672a\u767b\u9332'],
+['ヒメトンボ','Diplacodes trivialis',5,1,20,120,'\u672a\u767b\u9332'],
+['ハラボソトンボ','Orthetrum sabina',5,1,20,120,'\u672a\u767b\u9332'],
+['アオモンイトトンボ','Ischnura senegalensis',5,1,20,120,'\u672a\u767b\u9332'],
+['ヒメキトンボ','Brachythemis contaminata',5,1,20,120,'\u672a\u767b\u9332'],
+['ベニトンボ','Trithemis aurora',5,2,20,120,'\u672a\u767b\u9332'],
+['ムツアカネ','Sympetrum danae',5,2,20,120,'\u672a\u767b\u9332'],
+['ベニヒメトンボ','Diplacodes bipunctata',5,2,20,120,'\u672a\u767b\u9332'],
+['タイワンシオカラトンボ','Orthetrum glaucum',5,3,20,120,'\u672a\u767b\u9332'],
+['フチドリベッコウトンボ','Neurothemis fluctuans',5,3,20,120,'\u672a\u767b\u9332'],
+['アオイトトンボ','Lestes sponsa',5,3,20,120,'\u672a\u767b\u9332'],
+['エゾアカネ','Sympetrum flaveolum',5,3,20,120,'\u672a\u767b\u9332'],
+['アカメイトトンボ','Erythromma najas',5,4,20,120,'\u672a\u767b\u9332'],
+['ネグロトンボ','Neurothemis tullia',5,4,20,120,'\u672a\u767b\u9332'],
+['カラカネトンボ','Cordulia aenea',5,4,20,120,'\u672a\u767b\u9332'],
+['ヒメイトトンボ','Agriocnemis pygmaea',5,4,20,120,'\u672a\u767b\u9332'],
+['エゾアオイトトンボ','Lestes dryas',5,5,20,120,'\u672a\u767b\u9332'],
+['アメイロトンボ','Tholymis tillarga',5,5,20,120,'\u672a\u767b\u9332'],
+['コシブトトンボ','Acisoma panorpoides',5,5,20,120,'\u672a\u767b\u9332'],
+['シタベニハゴロモ','Lycorma delicatula',6,0,1,60,'\u672a\u767b\u9332'],
+['マツヘリカメムシ','Leptoglossus occidentalis',6,0,1,60,'\u672a\u767b\u9332'],
+['ブチヒゲカメムシ','Dolycoris baccarum',6,0,1,60,'\u672a\u767b\u9332'],
+['アシアカカメムシ','Pentatoma rufipes',6,0,1,60,'\u672a\u767b\u9332'],
+['ホソアワフキ','Philaenus spumarius',6,0,1,60,'\u672a\u767b\u9332'],
+['キョウチクトウアブラムシ','Aphis nerii',6,1,1,60,'\u672a\u767b\u9332'],
+['ネズミハゴロモ','Metcalfa pruinosa',6,1,1,60,'\u672a\u767b\u9332'],
+['アメリカヌマチゼミ','Neotibicen tibicen',6,1,1,60,'\u672a\u767b\u9332'],
+['ムラサキカメムシ','Carpocoris purpureipennis',6,1,1,60,'\u672a\u767b\u9332'],
+['ウスイロヒラタナガカメムシ','Kleidocerys resedae',6,2,1,60,'\u672a\u767b\u9332'],
+['ウススジカスミカメ','Adelphocoris lineolatus',6,2,1,60,'\u672a\u767b\u9332'],
+['オオヨコバイ','Cicadella viridis',6,2,1,60,'\u672a\u767b\u9332'],
+['キマダラカメムシ','Erthesina fullo',6,2,1,60,'\u672a\u767b\u9332'],
+['ハンノアワフキ','Aphrophora alni',6,2,1,60,'\u672a\u767b\u9332'],
+['スカシヒメヘリカメムシ','Liorhyssus hyalinus',6,3,1,60,'\u672a\u767b\u9332'],
+['タイワンマルカメムシ','Megacopta cribraria',6,3,1,60,'\u672a\u767b\u9332'],
+['フタスジカスミカメ','Stenotus binotatus',6,3,1,60,'\u672a\u767b\u9332'],
+['リンゴマダラヨコバイ','Orientus ishidae',6,3,1,60,'\u672a\u767b\u9332'],
+['ライチカメムシ','Tessaratoma papillosa',6,4,1,60,'\u672a\u767b\u9332'],
+['マダラナガカメムシ','Lygaeus equestris',6,4,1,60,'\u672a\u767b\u9332'],
+['プラタナスグンバイ','Corythucha ciliata',6,4,1,60,'\u672a\u767b\u9332'],
+['ハリモミヒメカサアブラムシ','Adelges tsugae',6,4,1,60,'\u672a\u767b\u9332'],
+['ミドリヌマチゼミ','Neotibicen superbus',6,4,1,60,'\u672a\u767b\u9332'],
+['ウスモンミドリカスミカメ','Taylorilygus apicalis',6,5,1,60,'\u672a\u767b\u9332'],
+['セグロベニモンツノカメムシ','Elasmostethus interstinctus',6,5,1,60,'\u672a\u767b\u9332'],
+['イセリアカイガラムシ','Icerya purchasi',6,5,1,60,'\u672a\u767b\u9332'],
+['ブドウネアブラムシ','Daktulosphaira vitifoliae',6,5,1,60,'\u672a\u767b\u9332'],
+['ナミハナアブ','Eristalis tenax',7,0,1,40,'\u672a\u767b\u9332'],
+['アメリカミズアブ','Hermetia illucens',7,0,1,40,'\u672a\u767b\u9332'],
+['モモブトチビハナアブ','Syritta pipiens',7,0,1,40,'\u672a\u767b\u9332'],
+['ホホアカクロバエ','Calliphora vicina',7,0,1,40,'\u672a\u767b\u9332'],
+['シマクロハナアブ','Eristalis arbustorum',7,0,1,40,'\u672a\u767b\u9332'],
+['ヒメフンバエ','Scathophaga stercoraria',7,1,1,40,'\u672a\u767b\u9332'],
+['シロスジベッコウハナアブ','Volucella pellucens',7,1,1,40,'\u672a\u767b\u9332'],
+['スイセンハナアブ','Merodon equestris',7,1,1,40,'\u672a\u767b\u9332'],
+['フタホシヒラタアブ','Eupeodes corollae',7,1,1,40,'\u672a\u767b\u9332'],
+['オビキンバエ','Chrysomya megacephala',7,2,1,40,'\u672a\u767b\u9332'],
+['ワタリムツホシヒラタアブ','Scaeva pyrastri',7,2,1,40,'\u672a\u767b\u9332'],
+['サシバエ','Stomoxys calcitrans',7,2,1,40,'\u672a\u767b\u9332'],
+['キカオアシブトハナアブ','Helophilus trivittatus',7,2,1,40,'\u672a\u767b\u9332'],
+['ヒメイエバエ','Fannia canicularis',7,3,1,40,'\u672a\u767b\u9332'],
+['オオフタホシヒラタアブ','Syrphus ribesii',7,3,1,40,'\u672a\u767b\u9332'],
+['ヒツジキンバエ','Lucilia cuprina',7,3,1,40,'\u672a\u767b\u9332'],
+['ドウガネホシメハナアブ','Eristalinus aeneus',7,3,1,40,'\u672a\u767b\u9332'],
+['カオスジコモンシマハナアブ','Eristalis nemorum',7,3,1,40,'\u672a\u767b\u9332'],
+['ホシツヤヒラタアブ','Melanostoma scalare',7,4,1,40,'\u672a\u767b\u9332'],
+['ネッタイシマカ','Aedes aegypti',7,4,1,40,'\u672a\u767b\u9332'],
+['キンイロヤブカ','Aedes vexans',7,4,1,40,'\u672a\u767b\u9332'],
+['タカネベッコウハナアブ','Volucella bombylans',7,4,1,40,'\u672a\u767b\u9332'],
+['クロオビハナバエ','Anthomyia illocata',7,5,1,40,'\u672a\u767b\u9332'],
+['ゴマフケヨソイカ','Chaoborus punctipennis',7,5,1,40,'\u672a\u767b\u9332'],
+['キアシマメヒラタアブ','Paragus haemorrhous',7,5,1,40,'\u672a\u767b\u9332'],
+['オビホソヒラタアブ','Meliscaeva cinctella',7,5,1,40,'\u672a\u767b\u9332'],
+['オガサワラゴキブリ','Pycnoscelus surinamensis',8,0,5,80,'\u672a\u767b\u9332'],
+['トウヨウゴキブリ','Blatta orientalis',8,1,5,80,'\u672a\u767b\u9332'],
+['キアシシロアリ','Reticulitermes flavipes',8,2,5,80,'\u672a\u767b\u9332'],
+['トルキスタンゴキブリ','Periplaneta lateralis',8,3,5,80,'\u672a\u767b\u9332'],
+['サツマゴキブリ','Opisthoplatia orientalis',8,4,5,80,'\u672a\u767b\u9332'],
+['アオヒゲナガトビケラ','Mystacides azureus',10,0,2,40,'\u672a\u767b\u9332'],
+['ヨーロッパクギヌキハサミムシ','Forficula auricularia',12,0,5,50,'\u672a\u767b\u9332'],
+['コヒゲジロハサミムシ','Euborellia annulipes',12,3,5,50,'\u672a\u767b\u9332'],
+['ヒメクサカゲロウ','Chrysoperla carnea',13,0,5,100,'\u672a\u767b\u9332'],
+['ミヤマクサカゲロウ','Chrysopa perla',13,1,5,100,'\u672a\u767b\u9332'],
+['アヤホソバヒメカゲロウ','Micromus variegatus',13,3,5,100,'\u672a\u767b\u9332'],
+['ヒメリュウキュウクサカゲロウ','Mallada basalis',13,4,5,100,'\u672a\u767b\u9332']
+];
+VERIFIED.forEach((r,i)=>{const b=[5,8,11,15,20,25][r[3]],t=(i*7+r[0].length)%3;D.push({id:D.length+1,ja:r[0],sci:r[1],cls:r[2],rar:r[3],min:r[4],max:r[5],hab:r[6],sea:'—（未登録）',desc:CL[r[2]]+'の昆虫。詳しい解説は今後追加予定です。',src:'GBIF（学名）／iNaturalist（和名）',atk:b+(t===0?3:0)+(r[5]>=60?2:0),def:b+(t===1?3:0),hp:b+5+(t===2?4:0)+(r[5]>80?2:0)})});
+const HC='Honda 生きもの図鑑（監修:大庭伸也）';
+[['カブトムシ',HC],['ミヤマクワガタ',HC],['コクワガタ',HC],['ハラビロカマキリ',HC],['コバネイナゴ',HC,'7〜12月'],['オオカマキリ',HC,'7月下旬〜10月'],['オナガサナエ','二宮町「葛川の生きもの」資料'],['ハグロトンボ','二宮町「葛川の生きもの」資料']].forEach(([n,s,m])=>{const o=D.find(x=>x.ja===n);if(o){o.src=s;if(m)o.sea=m}});
+/* 最強クラス15種：ゲーム用の独自能力（攻撃/防御/体力/素早さ/レア度）。体力は実エンジン用に換算 */
+const UQS={'ヘラクレスオオカブト':[98,90,190,55,5],'ギラファノコギリクワガタ':[100,72,155,76,5],'アクタエオンゾウカブト':[94,98,200,42,5],'コーカサスオオカブト':[92,87,175,67,4],'パラワンオオヒラタクワガタ':[96,79,165,70,4],'マンディブラリスフタマタクワガタ':[95,75,160,73,4],'グランディスオオクワガタ':[84,94,180,58,4],'エレファスゾウカブト':[88,92,190,40,3],'タランドゥスツヤクワガタ':[90,74,155,82,3],'オオクワガタ':[75,90,165,60,2],'ミヤマクワガタ':[76,65,125,90,2],'ノコギリクワガタ':[78,68,135,78,2],'オオスズメバチ':[82,55,100,98,3],'オオベッコウバチ':[80,60,110,92,3],'オニヤンマ':[85,65,120,100,3]};
+Object.entries(UQS).forEach(([n,v])=>{const o=D.find(x=>x.ja===n);if(o){o.atk=Math.round(v[0]*.28);o.def=Math.round(v[1]*.25);o.hp=Math.round(v[2]*.16);o.spd=v[3];o.rar=v[4]}});
+const UQ={'ヘラクレスオオカブト':{n:'ヘラクレスインパクト',d:'防御の一部を無視する強攻撃（3ターンに1回）',t:'a',cd:3,mult:1.5,pen:.4},'ギラファノコギリクワガタ':{n:'ギラファブレイク',d:'大ダメージ。相手の防御が高いほど追加（3ターンに1回）',t:'a',cd:3,mult:1.5,fd:2},'アクタエオンゾウカブト':{n:'ジャイアントプレス',d:'大ダメージ＋相手の次の攻撃力-15%（2ターンに1回）',t:'a',cd:2,mult:1.4,fa:.15},'コーカサスオオカブト':{n:'トライホーン',d:'攻撃後に防御+20%（HP50%以上で使用可）',t:'a',cd:1,mult:1.3,sd:.2,hc:1},'パラワンオオヒラタクワガタ':{n:'パラワンラッシュ',d:'2連続攻撃（2発目は60%・3ターンに1回）',t:'a',cd:3,hits:[1,.6]},'マンディブラリスフタマタクワガタ':{n:'クロスシザー',d:'大ダメージ＋確率で相手の攻撃力ダウン（2ターンに1回）',t:'a',cd:2,mult:1.6,fa:.15,pr:.5},'グランディスオオクワガタ':{n:'鉄壁の構え',d:'次の被ダメージ50%軽減＋反撃（3ターンに1回）',t:'a',cd:3,gd:1},'エレファスゾウカブト':{n:'ヘビーボディ',d:'HP70%以下で自動発動。2ターン防御大幅アップ（1回）',t:'x',th:.7,db:.5,tt:2},'タランドゥスツヤクワガタ':{n:'サウンドクラッシュ',d:'攻撃＋相手の素早さダウン（2ターンに1回）',t:'a',cd:2,mult:1.2,fs:15},'オオクワガタ':{n:'不屈の守り',d:'HP30%以下で自動発動。防御+30%（1回）',t:'x',th:.3,db:.3},'ミヤマクワガタ':{n:'山影の奇襲',d:'先攻の攻撃に追加ダメージ',t:'p',fe:.3},'ノコギリクワガタ':{n:'連戦の闘志',d:'攻撃が当たるたび攻撃+5%（最大3回）',t:'p',gr:.05},'オオスズメバチ':{n:'高速急襲',d:'先攻時、相手の次の攻撃力-15%（2ターンに1回）',t:'p',cd:2,fa:.15},'オニヤンマ':{n:'天空の急降下',d:'先攻時に追加ダメージ＋確率で素早さダウン（3ターンに1回）',t:'p',cd:3,fe:.3,fs:15,pr:.5}};
+const SKO={'オオベッコウバチ':'rally','オオクワガタ':'tgd','グランディスオオクワガタ':'tgd','ナナホシテントウ':'aid','ナミテントウ':'aid','カメノコテントウ':'aid','キイロテントウ':'aid','ニジュウヤホシテントウ':'aid','エレファスゾウカブト':'last','オオスズメバチ':'wk','オニヤンマ':'seal','ギラファノコギリクワガタ':'chase','ヤマトタマムシ':'tie','トノサマバッタ':'pre','カブトムシ':'rev','クロゴキブリ':'rc'};
+function autoQ(m,tg){const q=m.q;if(!q||q.t!=='x'||m.au||m.hp<=0||m.hp>m.max*q.th)return;m.au=1;m.db+=q.db;if(q.tt)m.tb={v:q.db,t:q.tt};L(`✨ ${tg}${m.nm}の【${q.n}】自動発動！防御アップ`)}
+/* 図鑑情報の補完（出典で確認できた種のみ。説明文は要約。min/max=参考体長mm, sea=活動時期, hab=生息地, d=説明, src=出典） */
+const HD='Honda 生きもの図鑑（監修:大庭伸也）';
+const INFO={
+'ギンヤンマ':{min:70,max:80,sea:'4〜11月',hab:'水田・池・沼・ゆるやかな小川',d:'頭と胸が黄緑色の大型のトンボ。オスは腹の付け根が鮮やかな青、メスは黄緑色。腹の裏の銀白色の模様が名の由来で、成虫も幼虫も肉食。',src:HD},
+'アキアカネ':{min:33,max:46,sea:'6月ごろ〜秋（夏は高地へ移動）',hab:'平地・丘陵地の池や水田の周辺',d:'童謡で知られる「赤とんぼ」。夏は涼しい高地へ移り、秋に平地へ戻る。2000年ごろから各地で数が減っている。',src:HD},
+'アカアシクワガタ':{min:24,max:58,sea:'6〜8月',hab:'標高の高い山地（1000m付近）',d:'オスもメスも赤い脚が特徴の山地性のクワガタ。大あごは美しく曲がり、内側に3本の歯がある。昼に活動してよく飛び、暑さに弱い。',src:HD},
+'ショウリョウバッタ':{min:27,max:57,sea:'7〜10月',hab:'都市の公園・芝生・河川敷・草原',d:'細長いバッタ。メスはオスよりずっと大きく、別種に見えるほど。オスは飛ぶときにチキチキと音を立てる。',src:HD},
+'オニヤンマ':{min:90,max:110,sea:'6〜9月',hab:'森林や林縁の小川・湿地の近く',d:'日本最大のトンボ。黒と黄色の縞模様と鬼のような顔が名の由来。幼虫は3〜5年かけて成長する。',src:HD},
+'アブラゼミ':{min:55,max:60,sea:'7月〜9月上旬',hab:'街路樹・公園・里山・山地',d:'茶色い翅でジリジリと鳴くセミ。名は油を熱する音に似ることから。都市部では温暖化や他のセミとの競争などで減っているとされる。',src:HD},
+'ミンミンゼミ':{min:55,max:64,sea:'7月下旬〜10月',hab:'落葉広葉樹（ケヤキなど）',d:'黒地に青緑の斑紋がある、比較的あざやかなセミ。暑さが苦手で、西日本では山地で見られる。幼虫期間は5〜6年と推測される。',src:HD},
+'ツクツクボウシ':{min:40,max:47,sea:'7月下旬〜10月',hab:'平地〜山地の市街地・森林',d:'細長い淡褐色の体で「ツクツクボーシ」と鳴く。夏の終わりを告げるセミとして知られる。',src:HD},
+'ニイニイゼミ':{min:32,max:38,sea:'6月下旬〜9月上旬',hab:'都市部〜平地の森林',d:'ほかのセミより早く鳴き始める小型のセミ。幹や根元など低い場所に多く、抜け殻は全身に泥をかぶっていて見分けやすい。',src:HD},
+'タガメ':{min:45,max:70,hab:'水田・池・沼',d:'日本最大のカメムシ。大きな体と強力な前脚で、魚やカエル、ときにはヘビまで捕らえる。卵はオスが守り、絶滅危惧種に指定されている貴重な水生昆虫。',src:'Honda 生きもの図鑑／Honda ハローウッズ'},
+'アンタエウスオオクワガタ':{max:87,hab:'南〜東南アジアの標高1000m以上の広葉樹林（ヒマラヤでは2000m以上にも）',sea:'活動期が長い（季節変動の少ない熱帯域）',d:'オオクワガタの仲間で最も重厚な体つきの大型種。オスの大あごは太く湾曲し、体は光沢のある黒色。名前はギリシャ神話の巨人アンタイオスに由来する。',src:'Wikipedia（日本語版）「アンタエウスオオクワガタ」（Weblio転載で確認）'},
+'ヒラタクワガタ':{hab:'低地〜山地の広葉樹林・河川敷',d:'低地から山地の広葉樹林にすむ大型のクワガタ。夜行性で樹液を吸い、気性が荒く大あごの力が強い。成虫は1〜3年生きる。',src:'Wikipedia（日本語版）「ヒラタクワガタ」'},
+'ネプチューンオオカブト':{sea:'雨季（明け方前に活動）',hab:'南米北西部（コロンビア・エクアドル・ペルー・ベネズエラ）',d:'ヘラクレスに似るが、やや大きく角が細く曲がった南米の大型カブトムシ。夜明け前の時間帯に活動し、成虫は熟した果物を好む。',src:'Wikipedia英語版「Dynastes neptunus」・ネブラスカ大学の昆虫ガイド'},
+'サタンオオカブト':{hab:'ボリビア',d:'ボリビアに分布するヘラクレス属の大型カブトムシ。オスは頭と胸に向かい合う長い角をもつ。近縁のネプチューンと同じく、明け方前に活動するとされる。',src:'Wikipedia英語版「Dynastes」ほか'},
+'ヒルスシロカブト':{hab:'中米（メキシコ〜ニカラグア）',d:'メキシコからニカラグアにかけての中米に分布するヘラクレス属。オスは頭と胸の2本の長い角でペンチのように挟む。',src:'Wikipedia英語版「Dynastes」'},
+'ティティウスシロカブト':{hab:'米国東部（ニューヨーク・フロリダ〜イリノイ・テキサス）',d:'北米の東部に分布するヘラクレス属。英語では「ユニコーンビートル」や「東のヘラクレス」とも呼ばれる。',src:'Wikipedia英語版「Dynastes」'},
+'グラントシロカブト':{hab:'米国南西部（アリゾナ・ニューメキシコ・ユタ）〜メキシコ北部',d:'北米の南西部からメキシコ北部に分布するヘラクレス属。英語では「西のヘラクレス」とも呼ばれる。',src:'Wikipedia英語版「Dynastes」'},
+'マヤシロカブト':{hab:'メキシコ南部・グアテマラ・ホンジュラス',d:'2003年に新種として記載された、比較的新しいヘラクレス属の仲間。メキシコ南部からホンジュラスにかけて分布する。',src:'Wikipedia英語版「Dynastes」'},
+'タイタンオオウスバカミキリ':{min:74,max:167,hab:'南米北部の低地の熱帯雨林',d:'南米の熱帯雨林にすむ世界最大級のカミキリムシ。夜行性で、成虫は餌をとらずフェロモンで相手を探す。短く鋭い大あごは鉛筆を折るほど強い。',src:'Wikipedia英語版「Titan beetle」・prioninae.eu'}};
+Object.entries(INFO).forEach(([n,v])=>{const o=D.find(x=>x.ja===n);if(o){if(v.min)o.min=v.min;if(v.max)o.max=v.max;if(v.sea)o.sea=v.sea;if(v.hab)o.hab=v.hab;if(v.d)o.desc=v.d;o.src=v.src}});
+/* 図鑑の説明文（提供データ）。説明が定型文のままの種にだけ適用 */
+const DESC={"アクタエオンゾウカブト": "南米に生息する世界重量級の巨大カブトムシ。重厚で漆黒の身体が特徴。", "デビルズフラワーマンティス": "花に擬態する大型のカマキリ。威嚇時に鮮やかな色の翅を広げる。", "チャンオオナナフシ": "世界最大級の体長を誇るナナフシの仲間。木の枝に非常に酷似している。", "アレクサンドラトリバネアゲハ": "世界最大のチョウ。パプアニューギニアに生息しワシントン条約で保護されている。", "ニジイロクワガタ": "オーストラリア原産。七色に光り輝く美しい前胸と上翅を持つクワガタ。", "アトラスオオカブト": "アジアを代表する大型カブトムシ。頭部と胸部に計3本の大きな角を持つ。", "ハナカマキリ": "ランの花にそっくりな姿をしており、花に紛れて獲物を待ち伏せする。", "ムカシトンボ": "原始的な形態を残す日本固有のトンボ。渓流付近に生息する生きている化石。", "コノハムシ": "葉っぱに酷似した体型と歩き方をする擬態のスペシャリスト。", "パラワンオオヒラタクワガタ": "ヒラタクワガタ属中最長を誇る。強靭な大あごと気性の荒さが特徴。", "マンディブラリスフタマタクワガタ": "世界最大級の大あごを持つフタマタクワガタ。凶暴で攻撃性が高い。", "グランディスオオクワガタ": "オオクワガタ属最大級の種。太い大あごと重厚感ある漆黒の体躯を持つ。", "モーレンカンプオオカブト": "ボルネオ島などに生息する大型カブトムシ。前胸の2本角が前方に長く伸びる。", "マルスゾウカブト": "アクタエオンに匹敵する大型ゾウカブト。体表に強い光沢があるのが特徴。", "ギアスゾウカブト": "黄土色の微毛に覆われたゾウカブト。南米に生息する。", "アヌビスゾウカブト": "比較的小型のゾウカブトで、体全体が短い毛で覆われている。", "サカダチコノハナナフシ": "大型でトゲが多いナナフシ。威嚇時に逆立ちのポーズをとる。", "メダマカレハカマキリ": "枯葉に擬態し、前脚の内側に大きな目玉模様を持つカマキリ。", "ニシキオオツバメガ": "マダガスカル産。「世界一美しい蛾」と称される虹色の翅を持つツバメガ。", "ブルーモルフォ": "中南米に生息する金属光沢の青い翅を持つモルフォチョウの代表種。", "ゴライアストリバネアゲハ": "アレクサンドラに次ぐ大型のトリバネアゲハ。鮮やかな緑と黄緑色の翅を持つ。", "アサギマダラ": "浅葱（あさぎ）色の斑紋を持ち、渡り鳥のように千キロ以上旅をする渡りチョウ。", "ヤママユ": "日本在来の大型の蛾。野蚕（やさん）として高品質な絹糸の原料にも利用される。", "シロスジカミキリ": "日本産カミキリムシで最大級の大きさ。背中に白い条紋がある。", "ゲンゴロウ": "水中を素早く泳ぎ獲物を捕食する肉食性の水生甲虫。", "ゴホンヅノカブト": "頭部と胸部に計5本の角を持つ東南アジア産のカブトムシ。竹林を好む。", "パプアキンイロクワガタ": "パプアニューギニア産。緑や赤など金属光沢の色彩変異が豊富な小型クワガタ。", "ミヤマカワトンボ": "渓流付近に生息する日本産の美しい大型カワトンボ。", "チョウトンボ": "翅が広く、青紫色に輝く金属光沢を持ち、ひらひらと飛ぶトンボ。", "スミナガシ": "墨を流したような美しい模様の翅を持つタテハチョウの仲間。", "ルリボシカミキリ": "鮮やかな瑠璃色と黒い斑点模様を持つ日本を代表する美しいカミキリムシ。", "ミヤマカラスアゲハ": "緑や青の金属光沢を帯びた輝く翅を持つ、日本産アゲハチョウ屈指の美種。", "エレファスゾウカブト": "全身が金色の微毛で覆われた巨大なゾウカブト。太く長い角が特徴。", "ルリボシヤンマ": "胴体に青い斑紋が並ぶ、北日本や高地に多いヤンマ科のトンボ。", "タランドゥスツヤクワガタ": "アフリカ産。強い光沢と独特の湾曲した大あごを持ち、威嚇時に体を振動させる。", "オオベッコウバチ": "タランチュラを専門に狩る世界最大級のハチ（タランチュラホーク）。", "アルキデスオオヒラタクワガタ": "スマトラ島原産。横幅が非常に広く重厚な体型を持つヒラタクワガタ。", "フォルスターフタマタクワガタ": "インドやミャンマー等に生息。大あごが先分かれする美麗種。", "ディディエールシカクワガタ": "鹿の角のように大きく曲がった大あごを持つマダガスカル産のクワガタ。", "ヘルマンミヤマクワガタ": "中国等に生息する大型ミヤマクワガタ。独特の頭部突起を持つ。", "メタリフェルホソアカクワガタ": "体長の半分以上を占める非常に長い大あごを持つホソアカクワガタ。", "ブルマイスターツヤクワガタ": "インド産。黄色と黒の美麗なグラデーションを持つツヤクワガタ。", "アルケスツヤクワガタ": "フィリピン原産。ツヤクワガタ属中最大級の大きさを誇る大型種。", "マキシムスマルバネクワガタ": "タイやベトナムに生息する超大型のマルバネクワガタ。", "バイオリンムシ": "バイオリンのように極端に平たく異形な体型をしたゴミムシの仲間。", "オオゴマダラ": "日本最大級のチョウ。白地に黒い斑点があり、金色の美しいサナギを作る。", "アオスジアゲハ": "黒地に青緑色の帯模様が鮮やかに映える身近なアゲハチョウ。", "カラスアゲハ": "深い緑や青の光沢を持つ黒地のアゲハチョウ。", "ジャコウアゲハ": "独特の匂いを放ち、体内に有毒成分を持つアゲハチョウ。", "ルリタテハ": "翅の表面に瑠璃色の美しい帯模様を持つタテハチョウ。", "コムラサキ": "オスの翅が角度によって紫色の美しい光沢を放つチョウ。", "オオスカシバ": "透明な翅を持ち、昼間にハチのように高速で飛ぶスズメガ。", "エビガラスズメ": "背中にエビのような帯模様がある大型のスズメガ。", "マイマイカブリ": "カタツムリを専門に捕食する日本固有の歩行性甲虫。", "ハンミョウ": "虹色の極彩色を持ち、「道教え」とも呼ばれる肉食甲虫。", "ミヤマカミキリ": "大型で長い触角を持つ日本各地の樹林に生息するカミキリムシ。", "ウスバカミキリ": "体が薄褐色でやや柔らかい大型のカミキリムシ。", "ヘイケボタル": "水辺に生息し、夏に淡い光を放つ身近なホタル。", "ヒメボタル": "陸生で、森林内で点滅する強い光を放つ小型のホタル。", "ウバタマムシ": "銅色の金属光沢とザラザラした体表を持つタマムシ。", "ガムシ": "ゲンゴロウに似た大型の水生甲虫で、成虫は主に水草を食べる。", "キイロスズメバチ": "黄色みが強く攻撃性が非常に高い危険なスズメバチ。", "コガタスズメバチ": "民家の軒下などにキノコ・鈴型の巣を作る比較的身近なスズメバチ。", "サムライアリ": "他のアリの巣を襲い、働きアリを奴隷化する生態を持つアリ。", "ウスバカマキリ": "前脚の付け根に黒い斑紋がある上品な見た目のカマキリ。", "クツワムシ": "ガチャガチャと大きな鳴き声を響かせる大型のキリギリスの仲間。", "ハグロトンボ": "翅が黒く、胴体が金属グリーンの清流付近に住むトンボ。", "ヤブヤンマ": "藪地や林縁の薄暗い場所を好むヤンマ科のトンボ。", "コオニヤンマ": "サナエトンボ科最大級で、頭が小さく脚が長いトンボ。", "クマゼミ": "西日本に多く、「シャンシャン」と大声で鳴く大型のセミ。", "エゾゼミ": "翅の基部に帯模様があり、山地で「ギィー」と鳴くセミ。", "ミズカマキリ": "水中に生息し、呼吸管を水面に出して獲物を狙う水生カメムシ。", "コオイムシ": "オスが背中に卵を背負って保護する水生昆虫。", "ミミズク": "頭部に耳のような突起を持つヨコバイ・ツノゼミに近い昆虫。", "ヨコヅナサシガメ": "桜の木などに群れ、他の昆虫の体液を吸う大型サシガメ。", "シオヤアブ": "他の昆虫を空中捕獲して体液を吸う強靭な肉食性のアブ。", "ビロウドツリアブ": "もこもこした毛に覆われ、空中ホバリングが得意なアブ。", "ヘビトンボ": "巨大な大あごを持ち、幼虫は「孫太郎虫」と呼ばれる水生昆虫。", "クロアゲハ": "全体的に黒く、後翅の縁に赤い月形斑があるアゲハチョウ。", "ナガサキアゲハ": "メスは黒と白の斑紋があり、尾状突起を持たない大型アゲハ。", "モンキアゲハ": "日本最大級のアゲハチョウで、後翅に大きな黄色い斑紋がある。", "ゴマダラチョウ": "白地に黒い斑紋があり、樹液に集まるタテハチョウ。", "ヒオドシチョウ": "緋色（濃いオレンジ）の翅を持つタテハチョウ。", "オオミスジ": "翅に3本の白い帯模様がある大きめのタテハチョウ。", "シンジュサン": "ヤママユに似た超大型の蛾で、翅の先端が蛇の頭のような柄を持つ。", "クスサン": "大型で「ヤママユガ」の仲間。繭は網目状で透かし俵と呼ばれる。", "ウチワヤンマ": "腹部の先端近くに団扇（うちわ）のような突起がある大型トンボ。", "オオゴキブリ": "朽ち木の中で家族で暮らす、光沢のある大型の野外性ゴキブリ。", "サバクトビバッタ": "大発生して相変異を起こし、農作物を食い尽くす飛翔性バッタ。", "アオバセセリ": "鮮やかな緑色の体とオレンジ色の尾を持つ美しいセセリチョウ。", "ベニスズメ": "ピンク色（鮮紅色）の美しく流線型の体を持つスズメガ。", "ウスバシロチョウ": "翅が半透明でアゲハチョウ科に属する春限定のチョウ。", "ミイデラゴミムシ": "危険を感じると高温の毒ガス（刺激物質）を噴射するゴミムシ。", "ヒアリ": "強い毒針を持ち、刺されると激痛やアナフィラキシーを起こす外来アリ。", "ツムギアリ": "幼虫の出す糸を使って葉を縫い合わせ、樹上に巣を作るアリ。", "カワラバッタ": "河原の砂利地に生息し、飛ぶと青い後翅が見えるバッタ。", "オナガサナエ": "尾部が長く伸びたサナエトンボの仲間。", "カトリヤンマ": "黄緑色の斑紋を持ち、日没時に蚊を捕食するため活発に飛ぶヤンマ。", "サンボンヅノカブト": "頭部と胸部に計3本の角を持つ東南アジア産の小型～中型カブト。", "モモブトハムシ": "オスの後脚の太ももが極端に太く発達している美麗なハムシ。", "ヤエヤマクマゼミ": "八重山諸島に生息する独特の鳴き声を持つクマゼミの亜種。", "ナナホシキンカメムシ": "黄金～緑色の強い金属光沢を持つ非常に美しいカメムシ。", "オオルリボシヤンマ": "高山や北方の湿原に生息する瑠璃色が美しい大型ヤンマ。", "キアゲハ": "黄色地に黒い条紋があり、ニンジンやセリの葉を好むアゲハチョウ。", "モンキチョウ": "黄色の翅に中央の黒・赤斑が特徴の身近なチョウ。", "キタキチョウ": "全体が鮮やかな黄色の身近なシロチョウ科の昆虫。", "ヤマトシジミ": "街中のカタバミ周辺でよく見られるごく小さな青灰色のシジミチョウ。", "ベニシジミ": "前翅が美しいオレンジ色（橙赤色）をした小ぶりのシジミチョウ。", "ルリシジミ": "翅の表面が淡い瑠璃色に輝くシジミチョウ。", "ツマグロヒョウモン": "メスの前翅の先が黒く、ヒョウ柄模様を持つタテハチョウ。", "アカタテハ": "鮮やかなオレンジと黒、白の斑紋を持つタテハチョウ。", "キタテハ": "翅の縁がギザギザで、裏面に小さな「c」模様があるチョウ。", "イチモンジチョウ": "黒地に1本の白い帯が一直線に入ったタテハチョウ。", "ヒカゲチョウ": "竹林や日陰を好み、茶系で目玉模様のあるチョウ。", "ジャノメチョウ": "翅に目玉模様（蛇の目）を持つ茶色のチョウ。", "イチモンジセセリ": "後翅の裏に一列に並んだ白斑があるセセリチョウ。", "カイコ": "家畜化された蛾で、繭から高品質な絹糸（シルク）が取れる。", "ホシホウジャク": "素早くホバリングしながら花蜜を吸うスズメガの仲間。", "カナブン": "四角い頭部と緑褐色～銅色の光沢を持つ樹液に集まる甲虫。", "アオカナブン": "鮮やかな美しい金属グリーン光沢を持つカナブンの近縁種。", "シロテンハナムグリ": "銅色～緑色の体に白い小さな点斑が散らばるハナムグリ。", "ドウガネブイブイ": "銅古色（ブロンズ）をした丸みのある葉食性コガネムシ。", "セマダラコガネ": "斑模様の変異が豊富な小型のコガネムシ。", "スジクワガタ": "小型で、大あごの内側にギザギザした筋状の歯を持つクワガタ。", "ネブトクワガタ": "大あごの付け根に大きな突起があり、マット状の腐木を好むクワガタ。", "ヨツボシモンシデムシ": "黒地にオレンジ色の4つの斑紋があり、動物の死骸に集まる虫。", "ゴマダラカミキリ": "黒地に白い星模様があり、ミカンやナスの木などを荒らすカミキリムシ。", "キボシカミキリ": "クワの木によく集まり、黄色の斑点模様があるカミキリムシ。", "ヨモギハムシ": "ヨモギの葉を食べ、丸く黒く光る小さなハムシ。", "ウリハムシ": "ウリ科の植物の葉を好んで食べるオレンジ色の小さなハムシ。", "ニジュウヤホシテントウ": "28個の黒点があり、ナス科の葉を食べる草食性テントウムシ。", "カメノコテントウ": "亀の甲羅のような模様をした日本最大級の肉食性テントウムシ。", "キイロテントウ": "全体が鮮やかな黄色で、うどんこ病などの菌を食べる益虫。", "ミズスマシ": "水面をくるくると高速で回転しながら泳ぐ水生甲虫。", "セグロアシナガバチ": "背中が黒く、身近な場所に巣を作るアシナガバチ。", "キアシナガバチ": "黄色みが強くアシナガバチ属の中で攻撃性が高めの種。", "キムネクマバチ": "胸部に黄色いフサフサの毛が生えた温厚な大型ハナバチ。", "セイヨウミツバチ": "養蜂で広く飼育され、蜂蜜を蓄える社会性ハチ。", "クロスズメバチ": "地中に巣を作り、「地蜂」や「へぼ」として食用にもされる小型スズメバチ。", "ムネアカオオアリ": "胸部が赤褐色をした日本最大級のアリ。", "クロヤマアリ": "日当たりの良い公園や庭で最もよく見られる黒いアリ。", "トビイロシワアリ": "胸部に細かいシワがあり、巣を路傍などに作る小型アリ。", "アミメアリ": "網目状の肌を持ち、特定の中央の女王を持たず引っ越しを繰り返すアリ。", "キゴシジガバチ": "腰が細く黄色い帯があり、クモを狩って巣に蓄えるハチ。", "オオカマキリ": "日本最大級のカマキリで、前脚の付け根が黄色い。", "コカマキリ": "小型で体色が褐色～緑色、前脚の内側に黒と白の斑紋がある。", "ツチイナゴ": "成虫のまま冬を越す、目から下に涙のような黒筋があるバッタ。", "コバネイナゴ": "翅がやや短く、水田周辺に多く生息するイナゴ。", "エンマコオロギ": "「コロコロコロ」と美しく鳴く日本代表格の大型コオロギ。", "ツヅレサセコオロギ": "秋に「肩させ、裾させ」と聞こえる声で鳴く身近なコオロギ。", "スズムシ": "「リーン、リーン」と涼やかな音色で鳴く有名な秋の虫。", "マツムシ": "「チンチロリン」と綺麗な声で鳴く松林などに多い虫。", "カンタン": "「ルルルルル」と透明感のある甲高い声で鳴く「鳴く虫の女王」。", "ヒガシキリギリス": "東日本に生息し、「ギース・チョン」と強く鳴くキリギリス。", "ケラ": "前脚が穴掘り用に発達し、「おけら」と呼ばれる地中性の昆虫。", "マダラカマドウマ": "便所コオロギとも呼ばれ、暗く湿った場所を好み跳躍力が高い虫。", "ヤブキリ": "草むらや樹上で他の昆虫を捕食する肉食傾向の強い大型キリギリス。", "ウスバキトンボ": "お盆の時期に大群で飛翔する「精霊トンボ」とも呼ばれる渡りトンボ。", "ナツアカネ": "成虫になると全身（胸部まで）鮮やかに真っ赤になる赤トンボ。", "ノシメトンボ": "翅の先端に黒い斑紋がある大型のアカトンボ。", "オオシオカラトンボ": "シオカラトンボより一回り大きく、オスは体表が濃い青白色になる。", "アジアイトトンボ": "非常に小型で繊細な体に青と緑の模様を持つイトトンボ。", "オツネントンボ": "成虫の姿のまま越冬（越年）する茶色いイトトンボ。", "ショウジョウトンボ": "全身（脚や翅の基部まで）鮮やかな真っ赤になるトンボ。", "コシアキトンボ": "腹部の付け根（腰）が白または黄色く空いているように見えるトンボ。", "ヒグラシ": "朝夕の薄暗い時間に「カナカナカナ」と哀愁を帯びた声で鳴くセミ。", "アメンボ": "水面に浮かび、脚から甘い匂いがすることから名付けられた水生昆虫。", "マツモムシ": "背泳ぎの姿勢で水面を泳ぎ、刺されると痛い水生カメムシ。", "アカスジカメムシ": "黒と赤の縦ストライプ模様を持つ美麗なカメムシ。", "ツマグロオオヨコバイ": "黄色い体で「バナナ虫」とも呼ばれるヨコバイ。", "ホソヒラタアブ": "ハチに似た黄色と黒の模様を持ち、空中静止（ホバリング）するアブ。", "アカウシアブ": "吸血性があり、牛や人に寄ってくる大型のアブ。", "キイロショウジョウバエ": "傷んだ果物等に集まり、遺伝学の研究材料として有名な小さなハエ。", "アカイエカ": "夜間に家屋に侵入し人から吸血する身近なカ。", "オオハナアブ": "ハナバチに非常によく似た姿をした大型のアブ。", "ヒロズキンバエ": "鮮やかな金緑色～青緑色の金属光沢を持つキンバエ。", "チャバネゴキブリ": "小型で前胸に2本の黒い縦筋がある屋内に生息するゴキブリ。", "ワモンゴキブリ": "胸部に輪状の斑紋がある大型の熱帯由来ゴキブリ。", "ヤマトゴキブリ": "日本古来の野外～屋内に生息する耐寒性のあるゴキブリ。", "イエシロアリ": "建物に甚大な被害を与える木材食性の社会性昆虫。", "フタバカゲロウ": "寿命が非常に短く、澄んだ水辺に生息するカゲロウ。", "ナナフシモドキ": "触角が短く、緑～褐色の枝に擬態する一般的なナナフシ。", "ハマベハサミムシ": "海岸の砂浜やゴミの下に生息するハサミムシ。", "ウスバカゲロウ": "幼虫は砂地で巣穴（アリジゴク）を作る昆虫。", "ヨツボシクサカゲロウ": "前胸に4つの黒点があり、幼虫はアブラムシを食べる。", "カミムラカワゲラ": "渓流のきれいな水域に生息するカワゲラ。", "スジグロシロチョウ": "翅の脈に沿って黒い筋模様が入るモンシロチョウの近縁種。", "ウラギンシジミ": "翅の裏側が純白色（銀色）で、前翅の角が尖っているシジミチョウ。", "ヒメアカタテハ": "アカタテハに似てやや小型で、世界中に広く分布するチョウ。", "テングチョウ": "頭部の先端（下唇鬚）が天狗の鼻のように前方に突き出ているチョウ。", "トラフカミキリ": "黄色と黒のトラ柄模様を持ち、スズメバチに擬態しているカミキリムシ。", "コアオハナムグリ": "緑色の体に白い斑点が散らばり、花に潜り込んで花粉を食べる。", "ヒメマルカツオブシムシ": "幼虫が衣類や乾物を食べる害虫として知られる小さな甲虫。", "ミヤマアカネ": "翅の途中に褐色の帯模様がある綺麗なアカトンボ。", "ハラビロトンボ": "腹部が太く扁平な形状をしている小型のトンボ。", "ウマオイ": "「スイッチョン」と馬を追う声に似た鳴き声で鳴くキリギリスの仲間。", "クロヒカゲ": "暗い竹林や森林内を好み、黒っぽい翅を持つヒカゲチョウ。", "サトキマダラヒカゲ": "樹液によく集まり、黄褐色の斑紋模様を持つヒカゲチョウ。", "ツバメシジミ": "後翅に小さな尻尾（尾状突起）とオレンジ色の斑点があるシジミチョウ。", "ウラナミシジミ": "翅の裏面に細い波状の模様がある渡りを行うシジミチョウ。", "ムラサキシジミ": "翅の表面が鮮やかな青紫色に輝くシジミチョウ。", "ダイミョウセセリ": "黒地に白斑があり、翅を平らに広げて休むセセリチョウ。", "ヒメウラナミジャノメ": "翅の裏に波状模様と小さな目玉模様があるジャノメチョウ。", "ヒメジャノメ": "薄暗い場所を好み、目玉模様が並ぶ小型のジャノメチョウ。", "オオセンチコガネ": "金緑色やコバルトブルーの金属光沢を持つフンチュウ。", "センチコガネ": "赤銅色などの光沢を持ち、動物の糞や腐敗物を食べるコガネムシ。", "コカブトムシ": "小型で上翅に縦スジがあり、肉食傾向が強いカブトムシ。", "アオハナムグリ": "鮮やかな緑色の体に微毛が生えたハナムグリ。", "オオゾウムシ": "日本産ゾウムシ最大種で、象の鼻のように伸びた口器を持つ。", "アオドウガネ": "全体が鈍い金緑色をした葉食性のコガネムシ。", "トビイロケアリ": "庭や家周辺の土中に巣を作るごく身近な茶褐色の小アリ。", "オオハリアリ": "腹部に毒針を持つ黒く細長いハリアリ。", "アルゼンチンアリ": "繁殖力・攻撃性が非常に高く生態系を乱す特定外来生物のアリ。", "ヒシバッタ": "前胸背板が菱形に後ろへ長く伸びている小型バッタ。", "クルマバッタ": "飛ぶと後翅に輪状の黒帯模様が見えるバッタ。", "カネタタキ": "「チッチッチ」と金属を叩くような声で鳴く樹上性の小さな虫。", "マダラスズ": "斑模様をしたごく小型のコオロギの仲間。", "ミツカドコオロギ": "オスの頭部前面が平らに削げ落ち角張った形をしているコオロギ。", "リスアカネ": "翅の先端が褐色に陰るアカトンボの一種。", "ヒメアカネ": "アカトンボの中で極めて小型の種。", "コノシメトンボ": "翅の先端が濃い褐色で、胸部に黒筋があるアカトンボ。", "ホソミイトトンボ": "成虫のまま越冬し、春になると体色が青く変化するイトトンボ。", "クロイトトンボ": "オスの体が黒と綺麗な青色で彩られたイトトンボ。", "ツマグロヨコバイ": "イネの害虫として知られる緑色の小さなヨコバイ。", "ワタアブラムシ": "農作物の汁を吸いモザイク病などを媒介する超小型害虫。", "ツチカメムシ": "地上や土中で生活し、黒く丸っこい体型をしたカメムシ。", "アオクサカメムシ": "全身が鮮やかな緑色で悪臭を放つ身近なカメムシ。", "ミナミアオカメムシ": "アオクサカメムシに非常によく似た暖地性のカメムシ。", "マルカメムシ": "クズなどのツル植物に群がり、独特の強い臭いを出す丸いカメムシ。", "ニクバエ": "卵ではなく幼虫を直接生みつける（卵胎生）灰色と黒のハエ。", "ヒメカブト": "東南アジアに生息する小型で太い角を持つカブトムシ。", "マメコガネ": "緑と茶色の美麗な小型コガネムシで、北米で害虫化している。", "クロカミキリ": "全体が黒く、針葉樹の伐採木などに集まるカミキリムシ。", "チッチゼミ": "日本最小級のセミで、「チッチッチ…」と鳴く。", "クジャクチョウ": "翅の表にクジャクの羽のような鮮やかな目玉模様を持つ美しいタテハチョウ。"};
+Object.entries(DESC).forEach(([n,d])=>{const o=D.find(x=>x.ja===n);if(o&&o.desc.includes('今後追加予定'))o.desc=d});
+/* 活動時期（提供データ）。まだ「未登録」の種にだけ適用（出典付きの値は上書きしない） */
+const SEA={"アクタエオンゾウカブト": "通年（熱帯・現地/飼育下）", "デビルズフラワーマンティス": "通年（熱帯・現地/飼育下）", "チャンオオナナフシ": "通年（熱帯・現地/飼育下）", "アレクサンドラトリバネアゲハ": "通年（熱帯・現地）", "ニジイロクワガタ": "通年（熱帯・現地/飼育下）", "アトラスオオカブト": "通年（熱帯・現地/飼育下）", "ハナカマキリ": "通年（熱帯・現地/飼育下）", "ムカシトンボ": "4月〜6月", "コノハムシ": "通年（熱帯・現地/飼育下）", "パラワンオオヒラタクワガタ": "通年（熱帯・現地/飼育下）", "マンディブラリスフタマタクワガタ": "通年（熱帯・現地/飼育下）", "グランディスオオクワガタ": "通年（熱帯・現地/飼育下）", "モーレンカンプオオカブト": "通年（熱帯・現地/飼育下）", "マルスゾウカブト": "通年（熱帯・現地/飼育下）", "ギアスゾウカブト": "通年（熱帯・現地/飼育下）", "アヌビスゾウカブト": "通年（熱帯・現地/飼育下）", "サカダチコノハナナフシ": "通年（熱帯・現地/飼育下）", "メダマカレハカマキリ": "通年（熱帯・現地/飼育下）", "ニシキオオツバメガ": "通年（熱帯・現地）", "ブルーモルフォ": "通年（熱帯・現地）", "ゴライアストリバネアゲハ": "通年（熱帯・現地）", "アサギマダラ": "5月〜10月", "ヤママユ": "8月〜10月", "シロスジカミキリ": "5月〜8月", "ゲンゴロウ": "4月〜10月（成虫越冬・通年）", "ゴホンヅノカブト": "通年（現地）/ 9月〜12月", "パプアキンイロクワガタ": "通年（熱帯・現地/飼育下）", "ミヤマカワトンボ": "4月〜9月", "チョウトンボ": "6月〜9月", "スミナガシ": "5月〜9月", "ルリボシカミキリ": "6月〜9月", "ミヤマカラスアゲハ": "4月〜9月", "エレファスゾウカブト": "通年（熱帯・現地/飼育下）", "ルリボシヤンマ": "7月〜10月", "タランドゥスツヤクワガタ": "通年（熱帯・現地/飼育下）", "オオベッコウバチ": "通年（熱帯・現地）", "アルキデスオオヒラタクワガタ": "通年（熱帯・現地/飼育下）", "フォルスターフタマタクワガタ": "通年（熱帯・現地/飼育下）", "ディディエールシカクワガタ": "通年（熱帯・現地/飼育下）", "ヘルマンミヤマクワガタ": "5月〜8月（現地/飼育下）", "メタリフェルホソアカクワガタ": "通年（熱帯・現地/飼育下）", "ブルマイスターツヤクワガタ": "通年（熱帯・現地/飼育下）", "アルケスツヤクワガタ": "通年（熱帯・現地/飼育下）", "マキシムスマルバネクワガタ": "通年（熱帯・現地/飼育下）", "バイオリンムシ": "通年（熱帯・現地）", "オオゴマダラ": "通年（亜熱帯・現地）", "アオスジアゲハ": "5月〜10月", "カラスアゲハ": "4月〜9月", "ジャコウアゲハ": "5月〜9月", "ルリタテハ": "3月〜11月（成虫越冬）", "コムラサキ": "5月〜10月", "オオスカシバ": "6月〜9月", "エビガラスズメ": "6月〜10月", "マイマイカブリ": "4月〜10月（成虫越冬）", "ハンミョウ": "4月〜10月", "ミヤマカミキリ": "6月〜8月", "ウスバカミキリ": "7月〜9月", "ヘイケボタル": "5月〜8月", "ヒメボタル": "5月〜7月", "ウバタマムシ": "4月〜10月（成虫越冬）", "ガムシ": "4月〜10月（成虫越冬）", "キイロスズメバチ": "4月〜11月", "コガタスズメバチ": "4月〜11月", "サムライアリ": "6月〜9月", "ウスバカマキリ": "8月〜11月", "クツワムシ": "8月〜11月", "ハグロトンボ": "5月〜10月", "ヤブヤンマ": "6月〜9月", "コオニヤンマ": "5月〜9月", "クマゼミ": "7月〜9月", "エゾゼミ": "7月〜9月", "ミズカマキリ": "4月〜10月（成虫越冬）", "コオイムシ": "4月〜10月（成虫越冬）", "ミミズク": "5月〜10月（成虫越冬）", "ヨコヅナサシガメ": "4月〜11月", "シオヤアブ": "6月〜9月", "ビロウドツリアブ": "3月〜5月", "ヘビトンボ": "5月〜8月", "クロアゲハ": "4月〜9月", "ナガサキアゲハ": "4月〜10月", "モンキアゲハ": "4月〜9月", "ゴマダラチョウ": "5月〜9月", "ヒオドシチョウ": "3月〜11月（成虫越冬）", "オオミスジ": "6月〜8月", "シンジュサン": "5月〜9月", "クスサン": "9月〜10月", "ウチワヤンマ": "5月〜9月", "オオゴキブリ": "通年（成虫越冬・多年生）", "サバクトビバッタ": "通年（熱帯・乾燥帯）", "アオバセセリ": "5月〜9月", "ベニスズメ": "5月〜9月", "ウスバシロチョウ": "4月〜6月", "ミイデラゴミムシ": "4月〜10月（成虫越冬）", "ヒアリ": "通年（熱帯・暖地）", "ツムギアリ": "通年（熱帯・現地）", "カワラバッタ": "7月〜10月", "オナガサナエ": "6月〜9月", "カトリヤンマ": "8月〜11月", "サンボンヅノカブト": "通年（熱帯・現地/飼育下）", "モモブトハムシ": "通年（熱帯・現地）", "ヤエヤマクマゼミ": "6月〜8月", "ナナホシキンカメムシ": "4月〜10月（暖地・ほぼ通年）", "オオルリボシヤンマ": "7月〜10月", "キアゲハ": "4月〜10月", "モンキチョウ": "4月〜11月", "キタキチョウ": "3月〜11月（成虫越冬）", "ヤマトシジミ": "3月〜11月", "ベニシジミ": "3月〜11月", "ルリシジミ": "3月〜10月", "ツマグロヒョウモン": "4月〜11月", "アカタテハ": "3月〜11月（成虫越冬）", "キタテハ": "3月〜11月（成虫越冬）", "イチモンジチョウ": "5月〜9月", "ヒカゲチョウ": "5月〜9月", "ジャノメチョウ": "7月〜9月", "イチモンジセセリ": "5月〜10月", "カイコ": "5月〜10月（飼育下）", "ホシホウジャク": "6月〜11月", "カナブン": "6月〜8月", "アオカナブン": "6月〜8月", "シロテンハナムグリ": "5月〜10月（成虫越冬）", "ドウガネブイブイ": "6月〜9月", "セマダラコガネ": "6月〜8月", "スジクワガタ": "6月〜9月（成虫越冬）", "ネブトクワガタ": "6月〜9月（成虫越冬）", "ヨツボシモンシデムシ": "5月〜10月", "ゴマダラカミキリ": "5月〜8月", "キボシカミキリ": "5月〜11月", "ヨモギハムシ": "4月〜10月", "ウリハムシ": "4月〜10月", "ニジュウヤホシテントウ": "4月〜10月", "カメノコテントウ": "4月〜10月", "キイロテントウ": "4月〜10月", "ミズスマシ": "4月〜10月（成虫越冬）", "セグロアシナガバチ": "4月〜11月", "キアシナガバチ": "4月〜11月", "キムネクマバチ": "4月〜10月", "セイヨウミツバチ": "通年（春〜秋活動、冬は巣内）", "クロスズメバチ": "4月〜11月", "ムネアカオオアリ": "4月〜11月", "クロヤマアリ": "4月〜11月", "トビイロシワアリ": "4月〜11月", "アミメアリ": "4月〜11月", "キゴシジガバチ": "6月〜10月", "オオカマキリ": "8月〜11月", "コカマキリ": "8月〜11月", "ツチイナゴ": "10月〜翌6月（成虫越冬）", "コバネイナゴ": "8月〜11月", "エンマコオロギ": "8月〜11月", "ツヅレサセコオロギ": "8月〜11月", "スズムシ": "8月〜10月", "マツムシ": "8月〜11月", "カンタン": "8月〜11月", "ヒガシキリギリス": "6月〜10月", "ケラ": "4月〜10月（成虫越冬）", "マダラカマドウマ": "通年（屋内・洞窟等）", "ヤブキリ": "6月〜10月", "ウスバキトンボ": "4月〜11月", "ナツアカネ": "6月〜12月", "ノシメトンボ": "7月〜11月", "オオシオカラトンボ": "5月〜9月", "アジアイトトンボ": "4月〜10月", "オツネントンボ": "3月〜11月（成虫越冬）", "ショウジョウトンボ": "5月〜10月", "コシアキトンボ": "5月〜9月", "ヒグラシ": "6月〜9月", "アメンボ": "4月〜10月（成虫越冬）", "マツモムシ": "4月〜10月（成虫越冬）", "アカスジカメムシ": "5月〜10月", "ツマグロオオヨコバイ": "4月〜11月", "ホソヒラタアブ": "3月〜11月", "アカウシアブ": "6月〜9月", "キイロショウジョウバエ": "3月〜11月（室内通年）", "アカイエカ": "3月〜11月（成虫越冬）", "オオハナアブ": "4月〜10月", "ヒロズキンバエ": "3月〜11月", "チャバネゴキブリ": "通年（屋内）", "ワモンゴキブリ": "通年（屋内）", "ヤマトゴキブリ": "4月〜10月（成虫越冬）", "イエシロアリ": "通年（有翅虫飛来:6月〜7月）", "フタバカゲロウ": "4月〜10月", "ナナフシモドキ": "5月〜11月", "ハマベハサミムシ": "4月〜10月", "ウスバカゲロウ": "6月〜9月", "ヨツボシクサカゲロウ": "4月〜10月", "カミムラカワゲラ": "4月〜7月", "スジグロシロチョウ": "4月〜10月", "ウラギンシジミ": "3月〜11月（成虫越冬）", "ヒメアカタテハ": "3月〜11月（暖地通年）", "テングチョウ": "3月〜11月（成虫越冬）", "トラフカミキリ": "6月〜8月", "コアオハナムグリ": "4月〜10月", "ヒメマルカツオブシムシ": "4月〜6月", "ミヤマアカネ": "7月〜11月", "ハラビロトンボ": "4月〜10月", "ウマオイ": "7月〜11月", "クロヒカゲ": "5月〜9月", "サトキマダラヒカゲ": "5月〜9月", "ツバメシジミ": "4月〜10月", "ウラナミシジミ": "7月〜11月", "ムラサキシジミ": "3月〜11月（成虫越冬）", "ダイミョウセセリ": "5月〜10月", "ヒメウラナミジャノメ": "4月〜10月", "ヒメジャノメ": "5月〜9月", "オオセンチコガネ": "4月〜11月", "センチコガネ": "4月〜11月", "コカブトムシ": "4月〜10月（成虫越冬）", "アオハナムグリ": "5月〜10月", "オオゾウムシ": "4月〜10月（成虫越冬）", "アオドウガネ": "6月〜9月", "トビイロケアリ": "4月〜11月", "オオハリアリ": "4月〜11月", "アルゼンチンアリ": "通年（暖地・屋内）", "ヒシバッタ": "4月〜10月（成虫越冬）", "クルマバッタ": "7月〜11月", "カネタタキ": "8月〜11月", "マダラスズ": "8月〜11月", "ミツカドコオロギ": "8月〜11月", "リスアカネ": "7月〜11月", "ヒメアカネ": "7月〜11月", "コノシメトンボ": "7月〜11月", "ホソミイトトンボ": "3月〜11月（成虫越冬）", "クロイトトンボ": "4月〜10月", "ツマグロヨコバイ": "4月〜11月", "ワタアブラムシ": "4月〜11月", "ツチカメムシ": "4月〜10月（成虫越冬）", "アオクサカメムシ": "4月〜11月（成虫越冬）", "ミナミアオカメムシ": "4月〜11月（成虫越冬）", "マルカメムシ": "4月〜10月（成虫越冬）", "ニクバエ": "3月〜11月", "ヒメカブト": "通年（熱帯・現地/飼育下）", "マメコガネ": "5月〜10月", "クロカミキリ": "5月〜8月", "チッチゼミ": "8月〜10月", "クジャクチョウ": "3月〜11月（成虫越冬）"};
+Object.entries({'コーカサスオオカブト':'通年（熱帯・現地/飼育下）','ギラファノコギリクワガタ':'通年（熱帯・現地/飼育下）','ヘラクレスオオカブト':'通年（熱帯・現地/飼育下）','ゴライアスオオツノハナムグリ':'通年（熱帯・現地/飼育下）','ヒラタクワガタ':'5月〜9月（成虫越冬）','サタンオオカブト':'通年（現地/飼育下）','タガメ':'4月〜10月（成虫越冬）','タイタンオオウスバカミキリ':'通年（熱帯・現地）','ヒルスシロカブト':'通年（現地/飼育下）','ティティウスシロカブト':'5月〜9月（現地/飼育下）','グラントシロカブト':'8月〜10月（現地/飼育下）','マヤシロカブト':'通年（現地/飼育下）'}).forEach(([n,v])=>{const o=D.find(x=>x.ja===n);if(o&&String(o.sea).startsWith('—'))o.sea=v});
+Object.entries(SEA).forEach(([n,v])=>{const o=D.find(x=>x.ja===n);if(o&&String(o.sea).startsWith('—'))o.sea=v});
+D.forEach(s=>s.rar=RM[s.rar]);const SP={},BY=[[],[],[],[],[]];D.forEach(s=>{SP[s.id]=s;BY[s.rar].push(s)});
+const KEY='insectKingdom_save',$=s=>document.querySelector(s);
+let S=load(),view='home',lock=false,saveT=0,fxN=0,ac=null;
+function fresh(){return{v:1,seq:0,total:0,ins:[],seen:{},pend:[],shown:[],team:[0,0,0],story:[],coin:0,titles:[],rate:1000,bestRate:1000,hist:[],rk:[],unl:0,rv:2,set:{sfx:true,skip:false}}}
+function load(){try{const o=JSON.parse(localStorage.getItem(KEY));if(o&&o.v===1){const s=Object.assign(fresh(),o);if(!o.rv){s.ins.forEach(i=>{i.r=RM[i.r]});delete s.zf;s.rv=2}return s}}catch(e){}return fresh()}
+function flush(){clearTimeout(saveT);saveT=0;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function qsave(){if(!saveT)saveT=setTimeout(flush,400)}
+addEventListener('pagehide',flush);addEventListener('beforeunload',flush);
+const rnd=n=>Math.floor(Math.random()*n);
+/* 茂みの出現レアリティ解放：価格・確率・種ごとの重みはここで調整する
+   RW=レアリティ別の基礎確率(%)（ノーマル70/レア20/超レア7/伝説級2.5/神話級0.5）、UNL=解放コイン、UL=解放段階ごとの最大レアリティ、SW=種ごとの出現重み(既定1、範囲0.25〜4) */
+const RW=[70,20,7,2.5,.5],UNL=[500,1500,3500,7000],UL=[0,1,2,3,4],UN=['ノーマル','レア','超レア','伝説級','神話級'],SW={};
+function pickR(){const lim=UL[Math.min(4,S.unl||0)];let sum=0;for(let i=0;i<=lim;i++)sum+=RW[i];let t=Math.random()*sum,i=0;for(;i<lim;i++){t-=RW[i];if(t<0)break}return i}
+function pickSp(r){const a=BY[r],w=a.map(s=>Math.min(4,Math.max(.25,SW[s.ja]||1)));let t=Math.random()*w.reduce((x,y)=>x+y,0);for(let i=0;i<a.length;i++){t-=w[i];if(t<0)return a[i]}return a[a.length-1]}
+function genSize(s){const x=(Math.random()+Math.random())/2;return Math.round((s.min+(s.max-s.min)*x)*10)/10}
+function catchOne(){
+ if(lock)return;
+ const r=pickR(),sp=pickSp(r),z=genSize(sp),t=Date.now();
+ const ins={u:++S.seq,s:sp.id,z,r,t};S.ins.push(ins);S.total++;
+ let rec=S.seen[sp.id],isNew=!rec;
+ if(!rec)rec=S.seen[sp.id]={n:0,min:z,max:z,first:t};
+ rec.n++;rec.min=Math.min(rec.min,z);rec.max=Math.max(rec.max,z);
+ const p=(z-sp.min)/(sp.max-sp.min),sz=p>=.93?'big':p<=.07?'small':'';
+ const hit=S.total%100===0;
+ if(hit){S.pend.push(S.total/100);lock=true;flush()}else qsave();
+ fx(sp,ins,isNew,sz);
+ const c=$('#cnt');if(c)c.textContent=S.total;const b=$('#nxt');if(b)b.style.width=(S.total%100)+'%';
+ if(hit)setTimeout(showResult,450);
+}
+/* 捕獲ジングル（Web Audioで合成・外部音源なし）
+   JG[レアリティ]：n=音程(Hz)の上昇列（ペンタトニック）、gap=音の間隔(ms)、len=1音の長さ(秒)、peak=音量係数、
+   spark=きらめき音の数、tail=余韻(秒)、chord=最後の和音 */
+const JG=[
+{n:[659.25],gap:0,len:.12,peak:.5,spark:0,tail:0},
+{n:[523.25,659.25,783.99],gap:70,len:.15,peak:.7,spark:0,tail:.12},
+{n:[523.25,659.25,783.99,1046.5],gap:65,len:.17,peak:.8,spark:2,tail:.2},
+{n:[523.25,659.25,783.99,1046.5,1318.51],gap:60,len:.19,peak:.9,spark:3,tail:.45,chord:[1046.5,1318.51,1567.98]},
+{n:[392,523.25,659.25,783.99,880,1046.5,1318.51],gap:55,len:.21,peak:1,spark:5,tail:.8,chord:[1046.5,1318.51,1567.98,2093]}];
+let jgMaster=null,lastTick=-1e9,lastHi=-1e9,lastR=0,NB=null;
+const sv=()=>S.set.vol==null?.7:S.set.vol;
+function audio(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac}catch(e){return null}}
+['pointerdown','touchstart','click','keydown'].forEach(e=>addEventListener(e,()=>{if(S.set.sfx)audio()},{passive:true}));
+function note(A,out,f,t,len,pk,mode){const g=A.createGain(),g2=A.createGain(),o1=A.createOscillator(),o2=A.createOscillator();
+o1.type='triangle';o2.type='sine';o1.frequency.value=f;o2.frequency.value=f*2;g2.gain.value=.35;o2.connect(g2);g2.connect(g);o1.connect(g);
+g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,pk),t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+g.connect(out);o1.start(t);o2.start(t);o1.stop(t+len+.02);o2.stop(t+len+.02);
+if(!mode){if(!NB||NB.sampleRate!==A.sampleRate){NB=A.createBuffer(1,Math.ceil(A.sampleRate*.012),A.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}
+const n=A.createBufferSource(),bp=A.createBiquadFilter(),ng=A.createGain();n.buffer=NB;bp.type='bandpass';bp.frequency.value=Math.min(6000,f*3);ng.gain.value=.12*pk;n.connect(bp);bp.connect(ng);ng.connect(out);n.start(t)}}
+function jingle(r,force){if(!S.set.sfx&&!force)return;try{const A=audio();if(!A)return;const now=A.currentTime,J=JG[r];
+const p=performance.now();if(r===0){if(p-lastTick<70)return;lastTick=p}else{if(p-lastHi<90&&r<=lastR)return;lastHi=p;lastR=r;if(jgMaster){try{jgMaster.gain.cancelScheduledValues(now);jgMaster.gain.setTargetAtTime(0,now,.015)}catch(e){}}}
+const M=A.createGain(),lp=A.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;lp.Q.value=.5;M.gain.value=.17*sv();M.connect(lp);const cp=A.createDynamicsCompressor?A.createDynamicsCompressor():null;if(cp){cp.threshold.value=-16;cp.ratio.value=8;lp.connect(cp);cp.connect(A.destination)}else lp.connect(A.destination);if(r>0)jgMaster=M;
+const t0=now+.01,N=J.n.length,tEnd=t0+(N-1)*J.gap/1000;
+J.n.forEach((f,i)=>note(A,M,f,t0+i*J.gap/1000,J.len,(i===N-1?1:.6+.3*i/N)*J.peak));
+if(J.chord)J.chord.forEach(f=>note(A,M,f,tEnd+.045,J.len+J.tail,.38*J.peak,1));
+else if(J.tail)note(A,M,J.n[N-1]*2,tEnd+.03,J.len+J.tail,.25*J.peak,1);
+for(let i=0;i<J.spark;i++)note(A,M,[2093,2349.3,2637,3136,3520][i%5],tEnd+.09+i*.05,.12,.12,2);
+setTimeout(()=>{try{M.disconnect()}catch(e){}if(jgMaster===M)jgMaster=null},(tEnd-now+J.len+J.tail+.7)*1000)}catch(e){}}
+function tone(r){jingle(r)}
+/* バトルBGMはWAV、技SEはWeb Audioで再生 */
+let bgAudio=null,bgTheme=null,bgDucked=false,seT=0,SB=null,NL=null;
+const bv=()=>S.set.bvol==null?.5:S.set.bvol;
+function busOut(A){if(!SB||SB.ctx!==A){const c=A.createDynamicsCompressor?A.createDynamicsCompressor():A.createGain();if(c.threshold){c.threshold.value=-14;c.ratio.value=8}c.connect(A.destination);c.ctx=A;SB=c}return SB}
+function tn(A,out,f,t,len,pk,type,f2){const o=A.createOscillator(),g=A.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+len);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,pk),t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+len);o.connect(g);g.connect(out);o.start(t);o.stop(t+len+.02)}
+function ns(A,out,t,len,pk,fc,q,type,fc2){if(!NL||NL.sampleRate!==A.sampleRate){NL=A.createBuffer(1,A.sampleRate,A.sampleRate);const d=NL.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+const s=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain();s.buffer=NL;f.type=type;f.frequency.setValueAtTime(fc,t);if(fc2)f.frequency.exponentialRampToValueAtTime(fc2,t+len);f.Q.value=q;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,pk),t+.003);g.gain.exponentialRampToValueAtTime(.0001,t+len);s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*.5,len+.02)}
+function bgmVol(){if(bgAudio)bgAudio.volume=(bgDucked?.12:.5)*bv()}
+function bgmStop(){if(!bgAudio)return;bgAudio.pause();bgAudio.currentTime=0;bgTheme=null;bgDucked=false}
+function bgmStart(th){if(S.set.bgm===false){bgmStop();return}const src=th==='boss'?'./audio/boss.wav':'./audio/battle.wav',changed=bgTheme!==th;
+ if(!bgAudio){bgAudio=new Audio();bgAudio.loop=true;bgAudio.addEventListener('error',()=>console.error('BGMの読み込みに失敗しました:',bgAudio.src))}
+ if(changed){bgAudio.pause();bgAudio.src=src;bgAudio.load();bgTheme=th;bgDucked=false}
+ bgmVol();bgAudio.play().catch(e=>console.error('BGMを再生できませんでした:',e));if(changed)sfx(th==='boss'?'warn':'start')}
+function bgmCtl(){if(view==='battle'&&B&&B.ph!=='end')bgmStart(B.cx&&B.cx.t==='story'&&ST[B.cx.id]&&(ST[B.cx.id].bgm==='boss'||ST[B.cx.id].boss)?'boss':'btl');else bgmStop()}
+if(document.addEventListener)document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else bgmCtl()});
+const SE={
+hit:(A,o,t,b)=>{ns(A,o,t,.12,.9,1400,.8,'bandpass');tn(A,o,170,t,.16,.9,'sine',50);if(b){tn(A,o,95,t,.3,1,'sine',35);ns(A,o,t,.07,.7,4500,1,'highpass');tn(A,o,880,t+.05,.25,.25,'triangle')}return b?.3:.16},
+guard:(A,o,t)=>{tn(A,o,620,t,.12,.5,'triangle',480);ns(A,o,t,.05,.5,3000,2,'bandpass');tn(A,o,1240,t+.02,.14,.25,'sine');return .16},
+chg:(A,o,t)=>{tn(A,o,180,t,.38,.5,'sawtooth',900);tn(A,o,360,t,.38,.25,'sine',1800);return .4},
+dodge:(A,o,t)=>{ns(A,o,t,.2,.6,2500,.7,'bandpass',600);return .2},
+skill:(A,o,t)=>{tn(A,o,260,t,.4,.45,'sawtooth',1300);[523.25,659.25,783.99,1046.5].forEach((f,i)=>tn(A,o,f,t+.12+i*.05,.3,.4,'triangle'));ns(A,o,t+.3,.1,.5,5000,1,'highpass');return .5},
+sup:(A,o,t)=>{[783.99,1046.5,1318.51].forEach((f,i)=>tn(A,o,f,t+i*.06,.14,.45,'triangle'));return .22},
+heal:(A,o,t)=>{[523.25,659.25,880].forEach((f,i)=>tn(A,o,f,t+i*.08,.22,.35,'sine'));return .3},
+seal:(A,o,t)=>{tn(A,o,220,t,.25,.5,'square',110);return .25},
+jk:(A,o,t)=>{tn(A,o,900,t,.05,.3,'square');tn(A,o,900,t+.07,.05,.3,'square');return .12},
+jw:(A,o,t)=>{tn(A,o,523.25,t,.1,.5,'triangle');tn(A,o,784,t+.09,.18,.5,'triangle');return .25},
+jl:(A,o,t)=>{tn(A,o,440,t,.1,.4,'triangle');tn(A,o,330,t+.09,.18,.4,'triangle');return .25},
+tie:(A,o,t)=>{tn(A,o,500,t,.08,.35,'triangle');tn(A,o,500,t+.1,.08,.35,'triangle');return .2},
+warn:(A,o,t)=>{tn(A,o,880,t,.18,.4,'square',660);tn(A,o,880,t+.22,.18,.4,'square',660);tn(A,o,110,t,.45,.6,'sawtooth',70);return .45},
+start:(A,o,t)=>{ns(A,o,t,.25,.5,1500,1,'highpass',6000);tn(A,o,1800,t+.05,.3,.25,'triangle');return .3},
+win:(A,o,t)=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>tn(A,o,f,t+i*.13,.24,.62,'triangle'));[783.99,987.77,1174.66,1567.98].forEach((f,i)=>tn(A,o,f,t+.58+i*.015,.95,.3,'sine'));tn(A,o,1567.98,t+.62,.65,.2,'triangle',2093);return 1.3},
+lose:(A,o,t)=>{[392,349.23,293.66,220].forEach((f,i)=>tn(A,o,f,t+i*.2,.42,.6,'triangle'));tn(A,o,110,t+.55,.75,.32,'sine',73.42);tn(A,o,220,t+.62,.58,.16,'sawtooth',146.83);return 1.35}};
+function sfx(k,b){if(!S.set.sfx||!SE[k])return;try{const A=audio();if(!A)return;const out=A.createGain();out.gain.value=.3*sv();out.connect(busOut(A));const now=A.currentTime;let t=Math.max(now+.02,seT);if(t>now+1.5&&k!=='win'&&k!=='lose'){return}const d=SE[k](A,out,t,b)||.2;seT=t+Math.min(d,.3);setTimeout(()=>{try{out.disconnect()}catch(e){}},(t-now+d+1)*1000)}catch(e){}}
+function seLog(t){if(B&&B.mute)return;const c=t[0];let k=null,b=0;
+if(c==='🎉')k='win';else if(c==='💥')k='lose';
+else if(c==='⚔'){k='hit';const m=t.match(/に(\d+)ダメージ（残HP (\d+)\/(\d+)）/);if(m&&+m[1]>=+m[3]*.2)b=1}
+else if(t.includes('固有スキル【'))k='skill';
+else if(c==='💨')k='dodge';else if(c==='🔒')k='seal';
+else if(c==='💗'||c==='💚'||t.includes('HP+'))k='heal';
+else if(t.includes('身構えた'))k='guard';else if(t.includes('力を溜めた'))k='chg';
+else if(c==='🛡'&&t.includes('反撃'))k='hit';
+else if(t.includes('【')&&t.includes('発動'))k='sup';
+else if(c==='✂')k='jk';else if(t.startsWith('勝ち！'))k='jw';else if(t.startsWith('負け…'))k='jl';else if(t.startsWith('あいこ'))k='tie';
+if(k){if((k==='win'||k==='lose')&&B&&B.q&&B.q.length){B.pendSE=k;return}sfx(k,b);if(k==='win'||k==='lose')bgmStop()}}
+let NEWSP=null;
+function renderNew(){const e=$('#newsp');if(!e)return;const s=NEWSP;e.innerHTML=s?`<div class="card rar${s.rar}" style="text-align:left;position:relative"><button aria-label="閉じる" onclick="NEWSP=null;renderNew()" style="position:absolute;right:6px;top:2px;border:0;background:none;font-size:1.3rem;color:inherit;min-width:40px;min-height:40px">✕</button><b>🆕 新種発見！ ${s.ja}</b> <span class="tag">${RN[s.rar]}</span><br><small>${s.sci}／${CL[s.cls]}</small><div style="margin:4px 0">${s.desc}</div><small>参考体長：約${s.min}〜${s.max}mm｜生息地：${s.hab}｜活動時期：${s.sea}<br>${s.src?'出典：'+s.src:'※体長は概数（未照合）'}｜図鑑 ${zc()}/${D.length}種</small><button class="btn sub" style="margin-top:6px;min-height:40px" onclick="detail(${s.id})">図鑑で詳しく見る</button></div>`:''}
+function fx(sp,ins,isNew,sz){if(isNew){NEWSP=sp;renderNew()}
+ const r=ins.r,pop=$('#pop');
+ if(pop)pop.innerHTML=`<div class="rar${r}"><div class="mini"><span class="ic">${iconOf(sp)}</span><div><b>${sp.ja}</b> ${isNew?'<span class="new">NEW</span>':''}<br><span class="tag">${RN[r]}</span> ${ins.z}mm${sz?` <b>${sz==='big'?'🔺大型！':'🔻小型！'}</b>`:''}</div></div></div>`;
+ tone(r);
+ if(sz){const t=$('#toast');t.textContent=sz==='big'?'🔺 大きな個体を捕獲！':'🔻 小さな個体を捕獲！';t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',900)}
+ const F=$('#fx'),skip=S.set.skip&&r>=2,n=skip?0:[4,8,12,16,0][r],rc='rar'+r;
+ const bush=$('#bush');const bb=bush?bush.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0,height:0};
+ const cx=bb.left+bb.width/2,cy=bb.top+bb.height/2;
+ for(let i=0;i<n&&fxN<45;i++){fxN++;const e=document.createElement('i');e.className='pt '+rc+(r===0?' leaf':'')+(r===3?' rb':'');const a=Math.random()*6.28,d=60+Math.random()*(60+r*30);e.style.cssText=`left:${cx}px;top:${cy}px;--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;e.addEventListener('animationend',()=>{e.remove();fxN--});F.appendChild(e)}
+ if(r>=2&&!skip&&fxN<45){const g=document.createElement('i');g.className='ring '+rc;g.style.cssText=`left:${cx-10}px;top:${cy-10}px`;g.addEventListener('animationend',()=>g.remove());F.appendChild(g)}
+ if(r===4&&!F.querySelector('.lg')){const l=document.createElement('div');l.className='lg';l.innerHTML=skip?'':`★ 神話級 ★<br>${sp.ja}`;if(skip)l.style.animationDuration='.3s';l.addEventListener('animationend',()=>l.remove());F.appendChild(l)}
+}
+const ic=(sp,r)=>`<span class="ic rar${r??sp.rar}">${iconOf(sp)}</span>`;
+const zc=()=>Object.keys(S.seen).length;
+const pct=(a,b)=>b?Math.floor(a/b*1000)/10:0;
+const f1=x=>(Math.round(x*10)/10);
+/* ---- results ---- */
+function resultData(n){
+ const sl=S.ins.slice((n-1)*100,n*100),before=new Set(S.ins.slice(0,(n-1)*100).map(i=>i.s));
+ const by={},rr=[0,0,0,0,0];let top=sl[0],big=sl[0];const nw=[];
+ sl.forEach(i=>{by[i.s]=(by[i.s]||0)+1;rr[i.r]++;if(i.r>top.r||(i.r===top.r&&i.z>top.z))top=i;if(i.z>big.z)big=i;if(!before.has(i.s)&&!nw.includes(i.s))nw.push(i.s)});
+ const done=new Set(S.ins.slice(0,n*100).map(i=>i.s)).size;
+ return{sl,by,rr,top,big,nw,done,min:Math.min(...sl.map(i=>i.z)),max:Math.max(...sl.map(i=>i.z))};
+}
+function showResult(){
+ if(!S.pend.length){lock=false;return}
+ const n=S.pend[0],R=resultData(n),tb=SP[R.top.s],bb=SP[R.big.s];
+ const ents=Object.entries(R.by).sort((a,b)=>b[1]-a[1]);
+ $('#modal').innerHTML=`<div class="modal"><div>
+ <h2>第${n}回・${n*100}体捕獲リザルト</h2>
+ <div class="card" style="text-align:center">図鑑の新規登録<div class="big2">${R.nw.length}種</div><small>現在の図鑑完成率 ${pct(R.done,D.length)}%（${R.done}/${D.length}種）／累計 ${n*100}体</small></div>
+ <div class="hero rar${R.top.r}">${ic(tb,R.top.r)}<div><small>今回の最レア</small><br><b>${tb.ja}</b> <span class="tag">${RN[R.top.r]}</span><br>${R.top.z}mm</div></div>
+ <div class="hero rar4" style="margin-top:8px;border-style:double">${ic(bb,R.big.r)}<div><small>今回の最大サイズ</small><br><b>${bb.ja}</b><br>${R.big.z}mm</div></div>
+ <div class="card">サイズ範囲：最小 ${R.min}mm 〜 最大 ${R.max}mm</div>
+ <h3>レアリティ別</h3><div class="card">${R.rr.map((c,i)=>`<div class="line rar${i}"><span class="tag">${RN[i]}</span><b>${c}体</b></div>`).join('')}</div>
+ <h3>種類別（${ents.length}種）</h3><div class="card">${ents.map(([id,c])=>`<div class="line rar${SP[id].rar}"><span>${ic(SP[id])} ${SP[id].ja} ${R.nw.includes(+id)?'<span class="new">NEW</span>':''}</span><b>${c}体</b></div>`).join('')}</div>
+ <details class="card"><summary><b>個体一覧（100体）</b></summary>${R.sl.map((i,k)=>`<div class="line rar${i.r}"><span>${k+1}. ${SP[i.s].ja}</span><span><span class="tag">${RN[i.r]}</span> ${i.z}mm</span></div>`).join('')}</details>
+ <button class="btn" id="go">続けて捕獲する</button></div></div>`;
+ $('#go').onclick=()=>{S.pend.shift();S.shown.push(n);flush();$('#modal').innerHTML='';lock=false;if(S.pend.length)showResult();else go('bush')};
+ const m=$('#modal .modal>div');m.scrollTop=0;
+}
+/* ---- views ---- */
+const V={
+home(){const p=S.total%100;return`<div class="top"><b>🌿 昆虫王国：インセクトバトル</b><br><small>茂みをタップして、昆虫図鑑を完成させよう</small></div>
+ <div class="card">累計捕獲 <b>${S.total}</b>体 ／ 図鑑 <b>${zc()}/${D.length}</b>種（${pct(zc(),D.length)}%）<div class="bar"><i style="width:${pct(zc(),D.length)}%"></i></div><small>次のリザルトまで あと${100-p}体</small></div>
+ <button class="btn" onclick="go('bush')">🌿 茂みで昆虫を捕まえる</button>
+ <div class="row" style="margin-top:8px"><button class="btn sub" onclick="go('zukan')">📖 図鑑</button><button class="btn sub" onclick="go('box')">🧺 所持昆虫</button><button class="btn sub" onclick="go('info')">👤 情報</button></div>
+ <div class="card muted"><b>開発状況</b><br>第1段階（捕獲・演出・図鑑・100体リザルト・保存）を実装済み。第2段階（編成・スキル・じゃんけんバトル）は練習バトルとして実装済み。第3段階（ストーリー・ランク・報酬・戦績）も実装済みです。ランクはAI戦のみで、オンライン対戦は<b>未実装</b>です。</div>
+ <div class="row"><button class="btn sub" onclick="go('team')">🛡 チーム編成</button><button class="btn sub" onclick="go('battle')">⚔ 練習バトル</button><button class="btn sub" onclick="go('story')">📜 ストーリー</button><button class="btn sub" onclick="go('rank')">🏆 ランク</button><button class="btn sub" onclick="go('unlock')">🔍 茂みの調査</button></div>`},
+bush(){return`<div class="card" style="text-align:center"><div>累計 <b class="big" id="cnt">${S.total}</b>体</div><div class="bar"><i id="nxt" style="width:${S.total%100}%"></i></div><small>100体ごとにリザルト</small></div>
+ <div id="bushWrap"><button id="bush" aria-label="茂みを探す">🌳</button></div><div id="pop"></div><div id="newsp"></div><p class="muted" style="text-align:center">タップ（連打OK）で必ず1体捕獲！</p><div class="card" style="text-align:center">🪙 ${S.coin}コイン／出現：${UN[Math.min(4,S.unl||0)]}まで<button class="btn sub" style="margin-top:6px" onclick="go('unlock')">🔍 茂みの調査</button></div>`},
+zukan(){const f=S.zf||(S.zf={c:'',r:'',s:'',o:'id'});
+ let l=D.filter(s=>(f.c===''||s.cls==f.c)&&(f.r===''||s.rar==f.r)&&(f.s===''||(f.s==='1')===!!S.seen[s.id]));
+ l.sort((a,b)=>f.o==='ja'?a.ja.localeCompare(b.ja,'ja'):f.o==='rar'?b.rar-a.rar||a.id-b.id:a.id-b.id);
+ const cs=CL.map((n,i)=>{const t=D.filter(s=>s.cls===i);const g=t.filter(s=>S.seen[s.id]).length;return t.length?`<span style="white-space:nowrap">${n} ${pct(g,t.length)}%</span>`:''}).join(' ／ ');
+ return`<h2>📖 昆虫図鑑</h2><div class="card"><b>完成率 ${pct(zc(),D.length)}%</b>（${zc()}/${D.length}種）<div class="bar"><i style="width:${pct(zc(),D.length)}%"></i></div><small>${cs}</small></div>
+ <div class="row"><select onchange="zf('c',this.value)"><option value="">分類:全て</option>${CL.map((n,i)=>D.some(s=>s.cls===i)?`<option value="${i}" ${f.c==i&&f.c!==''?'selected':''}>${n}</option>`:'').join('')}</select>
+ <select onchange="zf('r',this.value)"><option value="">レア:全て</option>${RN.map((n,i)=>`<option value="${i}" ${f.r==i&&f.r!==''?'selected':''}>${n}</option>`).join('')}</select></div>
+ <div class="row" style="margin-top:6px"><select onchange="zf('s',this.value)"><option value="">全て</option><option value="1" ${f.s==='1'?'selected':''}>捕獲済み</option><option value="0" ${f.s==='0'?'selected':''}>未捕獲</option></select>
+ <select onchange="zf('o',this.value)"><option value="id">図鑑順</option><option value="ja" ${f.o==='ja'?'selected':''}>名前順</option><option value="rar" ${f.o==='rar'?'selected':''}>レア順</option></select></div>
+ <div class="grid" style="margin-top:8px">${l.map(s=>{const r=S.seen[s.id];return`<div class="cell rar${s.rar} ${r?'':'sil'}" onclick="detail(${s.id})">${ic(s)}<br>${r?`<b>${s.ja}</b><br>×${r.n}`:'？？？'}<br><small>No.${String(s.id).padStart(3,'0')}</small></div>`}).join('')||'<p>該当する昆虫がいません。</p>'}</div>`},
+box(){const o=S.bo||'new';let l=S.ins.slice();
+ l.sort((a,b)=>o==='rar'?b.r-a.r||b.z-a.z:o==='size'?b.z-a.z:b.u-a.u);const lim=S.bl||60;
+ return`<h2>🧺 所持昆虫（${S.total}体）</h2><select onchange="S.bo=this.value;S.bl=60;go('box')"><option value="new">新しい順</option><option value="rar" ${o==='rar'?'selected':''}>レアリティ順</option><option value="size" ${o==='size'?'selected':''}>大きさ順</option></select>
+ <div class="grid" style="margin-top:8px">${l.slice(0,lim).map(i=>{const s=SP[i.s];return`<div class="cell rar${i.r}" style="cursor:default">${ic(s,i.r)}<br><b>${s.ja}</b><br>${i.z}mm<br><span class="tag">${RN[i.r]}</span></div>`}).join('')}</div>
+ ${l.length>lim?`<button class="btn sub" style="margin-top:8px" onclick="S.bl=${lim+60};go('box')">もっと見る（残り${l.length-lim}体）</button>`:''}${S.total?'':'<p>まだ昆虫がいません。茂みでタップしよう！</p>'}`},
+info(){const rc=[0,0,0,0,0];S.ins.forEach(i=>rc[i.r]++);
+ return`<h2>👤 プレイヤー情報</h2><div class="card"><div class="line"><span>累計捕獲数</span><b>${S.total}体</b></div><div class="line"><span>図鑑登録</span><b>${zc()}/${D.length}種（${pct(zc(),D.length)}%）</b></div><div class="line"><span>確認済みリザルト</span><b>${S.shown.length}回</b></div></div>
+ <h3>レアリティ別の捕獲数</h3><div class="card">${rc.map((c,i)=>`<div class="line rar${i}"><span class="tag">${RN[i]}</span><b>${c}体</b></div>`).join('')}</div>
+ ${rec()}`},
+ credits(){return creditsView('set')},
+set(){return`<h2>⚙ 設定</h2><div class="card"><label class="line"><span>効果音</span><input type="checkbox" ${S.set.sfx?'checked':''} onchange="S.set.sfx=this.checked;flush();if(this.checked)jingle(2,1)"></label>
+ <label class="line"><span>音量</span><input type="range" min="0" max="100" value="${Math.round(sv()*100)}" oninput="S.set.vol=this.value/100;qsave()" onchange="jingle(2,1)"></label>
+ <label class="line"><span>バトルBGM</span><input type="checkbox" ${S.set.bgm!==false?'checked':''} onchange="S.set.bgm=this.checked;flush();bgmCtl()"></label>
+ <label class="line"><span>BGM音量</span><input type="range" min="0" max="100" value="${Math.round(bv()*100)}" oninput="S.set.bvol=this.value/100;bgmVol();qsave()"></label>
+ <div class="row" style="margin:6px 0"><button class="btn sub" style="min-height:42px;font-size:.8rem" onclick="seTest()">♪技SE試聴</button><button class="btn sub" style="min-height:42px;font-size:.8rem" onclick="bgmTest()">♪BGM試聴</button><button class="btn sub" style="min-height:42px;font-size:.8rem" onclick="bgmTest('boss')">♪ボスBGM試聴</button></div>
+ <label class="line"><span>必殺技：画面揺れ</span><input type="checkbox" ${S.set.noshake?'':'checked'} onchange="S.set.noshake=!this.checked;flush()"></label>
+ <label class="line"><span>必殺技：フラッシュ</span><input type="checkbox" ${S.set.noflash?'':'checked'} onchange="S.set.noflash=!this.checked;flush()"></label>
+ <label class="line"><span>必殺技演出を簡略化</span><input type="checkbox" ${S.set.simple?'checked':''} onchange="S.set.simple=this.checked;flush()"></label>
+ <button class="btn sub" onclick="go('credits')">🎬 エンドクレジットを見る</button>
+ <div class="row" style="margin:6px 0">${RN.map((n,i)=>`<button class="btn sub" style="min-height:42px;font-size:.8rem;padding:4px" onclick="jingle(${i},1)">♪${n}</button>`).join('')}</div>
+ <label class="line"><span>レア演出をスキップ（超レア以上を簡易表示）</span><input type="checkbox" ${S.set.skip?'checked':''} onchange="S.set.skip=this.checked;flush()"></label></div>
+ <div class="card"><b>セーブデータ</b>（バージョン ${S.v}）<br><small>この端末のブラウザに保存されています。</small><button class="btn sub" id="rs" style="margin-top:8px">データをリセット</button></div>
+ <div class="card muted"><small>体長・生息地などは概数の参考値です。画像は仮アイコンです。</small></div>`}
+};
+/* ---- 第2段階：編成・スキル・バトル ---- */
+const SK={
+guard:{n:'鉄壁の構え',d:'バトル開始時、メインの防御+30%',c:'start',a:.3,t:'味方メイン',u:1,fx:'🛡'},
+heal:{n:'癒しの鱗粉',d:'メインHPが50%以下になると最大HPの25%回復',c:'low',a:.25,t:'味方メイン',u:1,fx:'💚'},
+first:{n:'先手の閃き',d:'先行時、メインの攻撃+25%（そのターン）',c:'first',a:.25,t:'味方メイン',u:3,fx:'⚡'},
+second:{n:'後の先',d:'後攻時、メインの防御+30%（そのターン）',c:'second',a:.3,t:'味方メイン',u:3,fx:'🌀'},
+weaken:{n:'毒の粉',d:'3ターン目に相手メインの攻撃-20%',c:'turn3',a:.2,t:'敵メイン',u:1,fx:'☠'},
+shield:{n:'衝撃吸収',d:'最大HPの25%以上の被ダメージを40%軽減',c:'big',a:.4,t:'味方メイン',u:1,fx:'✨'}};
+const SKC=['heal','guard','first','weaken','second','weaken','shield','second','shield','heal','guard','second','first','heal','guard'];
+SK.rally={n:'火事場の援護',d:'メインHPが30%以下で攻撃+25%',c:'vlow',a:.25,t:'味方メイン',u:1,fx:'🔥'};
+Object.assign(SK,{
+tgd:{n:'鉄壁ガード',d:'最大HP25%以上の被ダメージを20%軽減（2回）',c:'big',a:.2,u:2,fx:'🧱'},
+aid:{n:'応急手当',d:'メインHP40%以下で最大HPの10%回復（2回）',c:'low40',a:.1,u:2,fx:'🩹'},
+last:{n:'最後の援護',d:'メインHP15%以下で防御+50%（1回）',c:'low15',a:.5,u:1,fx:'🛡'},
+wk:{n:'攻撃力ダウン',d:'相手が強化したとき相手の攻撃力-15%（2回）',c:'foebuff',a:.15,u:2,fx:'⬇'},
+seal:{n:'必殺封じ',d:'相手の固有スキルを1回無効化',c:'foeuq',a:0,u:1,fx:'🔒'},
+chase:{n:'追撃支援',d:'メインの攻撃後に追加ダメージ（2ターンに1回）',c:'hit',a:.2,u:99,fx:'⚔'},
+tie:{n:'あいこガード',d:'あいこのターン被ダメージ30%軽減（2ターンに1回）',c:'tie',a:.3,u:99,fx:'🤝'},
+pre:{n:'先制サポート',d:'先攻時、メインの攻撃+10%',c:'first',a:.1,u:3,fx:'⚡'},
+rev:{n:'逆転の闘志',d:'メインHPが相手より低いターン攻撃+20%',c:'rev',a:.2,u:99,fx:'🔥'},
+rc:{n:'反撃回復',d:'攻撃を受けた後に少量回復（2ターンに1回）',c:'hurt',a:.05,u:99,fx:'💗'}});
+const HN=['✊グー','✌チョキ','✋パー'];
+const mk=(sp,z,r)=>{const k=1+((z-sp.min)/((sp.max-sp.min)||1)-.5)*.1,m=Math.round(sp.hp*12*k);return{id:sp.id,nm:sp.ja,em:iconOf(sp),r,z,atk:Math.round(sp.atk*k*10)/10,def:Math.round(sp.def*k*10)/10,max:m,hp:m,sk:SKO[sp.ja]||SKC[sp.cls],u:SK[SKO[sp.ja]||SKC[sp.cls]].u,ab:0,db:0,ta:0,td:0,chg:0,df:0,spd:sp.spd||50,q:UQ[sp.ja]||null,cd:0,hi:0,nx:0,gg:0,U:ULT[sp.ja]||null,eff:[],hitc:0,dv:0,zc:0}};
+const gi=u=>{const i=S.ins[u-1];return i&&i.u===u?i:null};
+const tu=u=>{const i=gi(u);return i?mk(SP[i.s],i.z,i.r):null};
+V.team=()=>{const lb=['メイン','サポート1','サポート2'];
+return`<h2>🛡 チーム編成</h2><p class="muted">メイン1体が戦い、サポート2体がスキルで支援します。同じ個体は重複できません。サイズによる能力差は±5%です。</p><button class="btn sub" onclick="autoT()">おまかせ編成</button>`+S.team.map((u,i)=>{const x=tu(u);return`<div class="card rar${x?x.r:0}" style="cursor:pointer" onclick="pick(${i})"><b>${lb[i]}</b><br>${x?`<span class="ic">${x.em}</span> <b>${x.nm}</b> <span class="tag">${RN[x.r]}</span> ${x.z}mm<br>${i?'':`攻撃${x.atk} 防御${x.def} 体力${x.max} 素早さ${x.spd}<br>${x.q?`✨${x.q.n}：${x.q.d}<br>`:''}`}<small>${SK[x.sk].fx}${SK[x.sk].n}：${SK[x.sk].d}（${SK[x.sk].u}回・対象:${SK[x.sk].t}）</small>`:'<span class="muted">タップして選ぶ</span>'}</div>`}).join('')};
+function pick(i){const used=S.team.filter((u,j)=>j!==i&&u),l=S.ins.filter(x=>!used.includes(x.u)).sort((a,b)=>b.r-a.r||b.z-a.z).slice(0,60);
+$('#modal').innerHTML=`<div class="modal" onclick="if(event.target===this)this.parentNode.innerHTML=''"><div><h3>${i?'サポート'+i:'メイン'}を選ぶ</h3><small>レア順・上位60体</small>`+l.map(n=>{const x=mk(SP[n.s],n.z,n.r);return`<div class="line rar${n.r}" style="cursor:pointer" onclick="setT(${i},${n.u})"><span>${ic(SP[n.s])} <b>${x.nm}</b> ${n.z}mm</span><small>攻${x.atk} 防${x.def} 体${x.max}<br>${SK[x.sk].n}</small></div>`}).join('')+`<button class="btn sub" onclick="setT(${i},0)">外す</button></div></div>`}
+function setT(i,u){S.team[i]=u;flush();$('#modal').innerHTML='';B=null;go('team')}
+function autoT(){const used=[];S.team=[0,1,2].map(()=>{const c=S.ins.filter(x=>!used.includes(x.u)).sort((a,b)=>b.r-a.r||SP[b.s].atk-SP[a.s].atk||b.z-a.z)[0];if(c)used.push(c.u);return c?c.u:0});flush();B=null;go('team')}
+let B=null;
+const L=t=>{B.log.push(t);try{seLog(t)}catch(e){}};
+function trig(me,op,ev,tg){const dn={};for(const x of me.s){const k=SK[x.sk];if(k.c!==ev||x.u<=0||dn[x.sk])continue;dn[x.sk]=1;x.u--;const m=me.m;let h=0;
+if(x.sk==='guard')m.db+=k.a;else if(x.sk==='heal'||x.sk==='aid'){h=Math.min(m.max-m.hp,Math.round(m.max*k.a));m.hp+=h}else if(x.sk==='first'||x.sk==='pre')m.ta+=k.a;else if(x.sk==='second')m.td+=k.a;else if(x.sk==='weaken')op.m.ab-=k.a;else if(x.sk==='rally')m.ab+=k.a;else if(x.sk==='last')m.db+=k.a;else if(x.sk==='wk')op.m.nx=(op.m.nx||0)+k.a;
+L(`${k.fx} ${tg}${x.nm}の【${k.n}】発動！`+(h?`（HP+${h}）`:''))}}
+const dmg=(a,d,mu,pen)=>Math.max(1,Math.round(a.atk*(1+a.ab+a.ta-(a.nx||0))*5*100/(100+d.def*(1+d.db+d.td)*(1-(pen||0))*5)*mu));
+function act(me,op,a,tg,og,opSecond){const m=me.m;
+if(a==='def'){m.df=1;L(`🛡 ${tg}${m.nm}は身構えた（被ダメ半減）`);return}
+if(a==='chg'){m.chg=1;L(`🔥 ${tg}${m.nm}は力を溜めた（次の攻撃×1.8）`);trig(op,me,'foebuff',og);return}
+if(a==='ult'){if(m.U&&m.gg>=100&&m.ul!==B.turn){ult(me,op,tg,og,opSecond);return}a='atk'}
+const q=m.q;if(a==='uq'&&q&&q.hc&&m.hp<m.max*.5)a='atk';if(a==='uq'&&!(q&&q.t==='a'))a='atk';
+let sk=a==='uq'?q:null;if(sk){const sl=op.s.find(x=>x.sk==='seal'&&x.u>0);if(sl){sl.u--;L(`🔒 ${og}${sl.nm}の【必殺封じ】！${tg}${m.nm}の固有スキルを無効化`);m.cd=sk.cd;sk=null}}
+if(sk){m.cd=sk.cd;if(sk.gd){m.gd=1;L(`✨ ${tg}${m.nm}の【${sk.n}】発動！次に受けるダメージを50%軽減し反撃`);trig(op,me,'foebuff',og);return}L(`✨ ${tg}${m.nm}の固有スキル【${sk.n}】発動！`)}
+const fire=!!(q&&q.t==='p'&&opSecond&&(!q.cd||m.cd<=0));
+let dg=Math.min(.25,Math.max(0,(op.m.spd||50)-(m.spd||50))/300);if(op.m.dv){dg=Math.max(dg,op.m.dvp||.5);op.m.dv=0}if(Math.random()<dg){L(`💨 ${og}${op.m.nm}は攻撃を回避した！`);return}
+let d=dmg(m,op.m,(m.chg?1.8:1)*(sk?(sk.hits?sk.hits.reduce((s,x)=>s+x,0):sk.mult||1):1),sk&&sk.pen);m.chg=0;m.nx=0;
+if(sk&&sk.fd)d+=Math.round(op.m.def*sk.fd);
+if(fire&&q.fe)d=Math.round(d*(1+q.fe));
+if(op.m.df)d*=.5;if(opSecond)d*=.9;if(op.m.tg)d*=1-op.m.tg;let zcf=0;if(op.m.zc){d*=.3;zcf=1}
+if(op.m.gd){op.m.gd=0;const c=Math.max(1,Math.round(d*.25));d*=.5;m.hp=Math.max(0,m.hp-c);L(`🛡 ${og}${op.m.nm}の反撃！ ${tg}${m.nm}に${c}ダメージ`);if(m.hp<=0)return}
+d=Math.max(1,Math.round(d));
+if(d>=op.m.max*.25){const s=op.s.find(x=>(x.sk==='shield'||x.sk==='tgd')&&x.u>0);if(s){const K=SK[s.sk];s.u--;d=Math.max(1,Math.round(d*(1-K.a)));L(`${K.fx} ${og}${s.nm}の【${K.n}】発動！ダメージ軽減`)}}
+op.m.hp=Math.max(0,op.m.hp-d);L(`⚔ ${tg}${m.nm}の攻撃！ ${og}${op.m.nm}に${d}ダメージ（残HP ${op.m.hp}/${op.m.max}）`);
+gg(m,GG.hit);gg(op.m,GG.hurt);m.hitc=(m.hitc||0)+1;if(zcf)zcFire(op,me,og,tg);
+if(sk){if(sk.sd&&m.db<.4){m.db+=sk.sd;trig(op,me,'foebuff',og)}if(sk.fa&&(!sk.pr||Math.random()<sk.pr))op.m.nx=(op.m.nx||0)+sk.fa;if(sk.fs)op.m.spd=Math.max(10,(op.m.spd||50)-sk.fs);if(sk.hits)L(`　${sk.hits.length}連撃！`)}
+if(q&&q.gr&&m.hi<3){m.hi++;m.ab+=q.gr}
+if(fire){if(q.fa)op.m.nx=(op.m.nx||0)+q.fa;if(q.fs&&Math.random()<(q.pr||1))op.m.spd=Math.max(10,(op.m.spd||50)-q.fs);if(q.cd)m.cd=q.cd;L(`✨ ${tg}${m.nm}の【${q.n}】発動！`)}
+{const ch=me.s.find(x=>x.sk==='chase'&&x.cd<=0);if(ch&&op.m.hp>0){const e=Math.max(1,Math.round(d*SK.chase.a));op.m.hp=Math.max(0,op.m.hp-e);ch.cd=2;L(`⚔ ${tg}${ch.nm}の【追撃支援】！${og}${op.m.nm}に${e}ダメージ`)}
+const rc=op.s.find(x=>x.sk==='rc'&&x.cd<=0);if(rc&&op.m.hp>0){const h=Math.min(op.m.max-op.m.hp,Math.round(op.m.max*SK.rc.a));if(h>0){op.m.hp+=h;rc.cd=2;L(`💗 ${og}${rc.nm}の【反撃回復】！HP+${h}`)}}}
+if(op.m.hp>0&&op.m.hp<=op.m.max*.4)trig(op,me,'low40',og);if(op.m.hp>0&&op.m.hp<=op.m.max*.15)trig(op,me,'low15',og);
+if(op.m.hp>0&&op.m.hp<=op.m.max/2)trig(op,me,'low',og);if(op.m.hp>0&&op.m.hp<=op.m.max*.3)trig(op,me,'vlow',og);autoQ(op.m,og)}
+function startB(d){const t=S.team.map(tu);if(t.some(x=>!x))return;const k=[.8,1,1.25][d],pk=l=>l[rnd(l.length)];
+const E=[1+d,1,1].map(r=>{const s=pk(D.filter(x=>x.rar<=r)),x=mk(s,(s.min+s.max)/2,s.rar);x.atk=Math.round(x.atk*k*10)/10;x.def=Math.round(x.def*k*10)/10;x.max=Math.round(x.max*k);x.hp=x.max;return x});
+B={p:{m:t[0],s:[t[1],t[2]]},e:{m:E[0],s:[E[1],E[2]]},turn:1,log:['バトル開始！'],ph:'hand',f:null,d};
+trig(B.p,B.e,'start','');trig(B.e,B.p,'start','敵の');go('battle')}
+function hand(h){if(!B||B.ph!=='hand')return;const e=rnd(3);L(`✂ あなた:${HN[h]} / 敵:${HN[e]}`);
+if(h===e){L('あいこ！もう一度');for(const s of [B.p,B.e]){const x=s.s.find(y=>y.sk==='tie'&&y.cd<=0);if(x){x.cd=2;s.m.tg=SK.tie.a;L(`🤝 ${s===B.p?'':'敵の'}${x.nm}の【あいこガード】発動！`)}}go('battle');return}
+const w=(h-e+3)%3===2;B.f=w?'p':'e';gg((w?B.p:B.e).m,GG.jan);L(w?'勝ち！あなたが先行':'負け…敵が先行');
+const F=w?B.p:B.e,S2=w?B.e:B.p,ft=w?'':'敵の',st=w?'敵の':'';
+trig(F,S2,'first',ft);trig(S2,F,'second',st);
+if(B.turn===3){trig(B.p,B.e,'turn3','');trig(B.e,B.p,'turn3','敵の')}
+for(const[s,o,t]of[[B.p,B.e,''],[B.e,B.p,'敵の']]){const x=s.s.find(y=>y.sk==='rev');if(x&&s.m.hp<o.m.hp){s.m.ta+=SK.rev.a;L(`🔥 ${t}${x.nm}の【逆転の闘志】発動！攻撃+20%`)}}
+B.ph='act';go('battle')}
+function doAct(a){if(!B||B.ph!=='act'||B.lock)return;if(a==='ult'&&!(B.p.m.U&&B.p.m.gg>=100&&B.p.m.ul!==B.turn))return;B.q=[];B.p.m.ph=B.p.m.hp;B.e.m.ph=B.e.m.hp;const r=Math.random(),lo=B.e.m.hp<B.e.m.max*.3,ea0=r<(lo?.3:.6)?'atk':r<(lo?.7:.8)?'def':'chg',ea=(B.e.m.q&&B.e.m.q.t==='a'&&B.e.m.cd<=0&&Math.random()<.4)?'uq':ea0,ea1=(B.e.m.U&&B.e.m.gg>=100&&B.e.m.ul!==B.turn&&Math.random()<.8)?'ult':ea;
+const q=B.f==='p'?[['p',a],['e',ea1]]:[['e',ea1],['p',a]];
+for(let i=0;i<2;i++){const s=q[i][0],me=B[s],op=B[s==='p'?'e':'p'];act(me,op,q[i][1],s==='p'?'':'敵の',s==='p'?'敵の':'',i===0);
+if(me.m.hp<=0){B.ph='end';B.win=s!=='p';break}if(op.m.hp<=0){B.ph='end';B.win=s==='p';break}}
+if(B.ph!=='end')zcEnd();if(B.ph==='end'){L(B.win?'🎉 勝利！':'💥 敗北…');onEnd()}
+else{B.turn++;[B.p.m,B.e.m].forEach(m=>{m.ta=0;m.td=0;m.df=0;m.tg=0;m.eff=(m.eff||[]).filter(e=>{if(--e.t<=0){m[e.k]-=e.v;return false}return true});if(m.cd>0)m.cd--;if(m.tb&&--m.tb.t<=0){m.db-=m.tb.v;m.tb=null}});[...B.p.s,...B.e.s].forEach(x=>{if(x.cd>0)x.cd--});B.ph='hand';L(`── ターン${B.turn} ──`)}
+playQ()}
+const hpb=x=>{const n=Math.max(0,x.hp/x.max*100),w=x.ph!=null?Math.max(0,x.ph/x.max*100):n;return`<div class="bar"><i data-n="${n}" style="width:${w}%;${n<30?'background:#e5484d':''}"></i></div>`};
+const gaugeH=m=>m.U?`<div class="bar gg${m.gg>=100?' rdy':''}"><i style="width:${m.gg||0}%"></i></div><small>🌟必殺ゲージ ${Math.round(m.gg||0)}%${m.gg>=100?'（'+(B&&m===B.e.m?'⚠敵が「'+m.U.n+'」を発動可能！':'発動可！')+'）':''}</small>`:'';
+const sideH=(s,t)=>`<div class="card rar${s.m.r}"><span class="ic">${s.m.em}</span> <b>${t}${s.m.nm}</b> <span class="tag">${RN[s.m.r]}</span><br>HP ${s.m.hp}/${s.m.max}${hpb(s.m)}${gaugeH(s.m)}<small>攻${f1(s.m.atk*(1+s.m.ab+s.m.ta))} 防${f1(s.m.def*(1+s.m.db+s.m.td))}${s.m.chg?' 🔥溜め中':''}${s.m.df?' 🛡防御中':''}<br>${s.s.map(x=>`<span class="supic rar${x.r}">${x.em}</span>${x.nm}：${SK[x.sk].n}${x.u>0?'':'(使用済)'}`).join('<br>')}</small></div>`;
+function creditsView(back,reward='',clearBattle=false){return`<div class="ending"><div class="credit-window"><div class="credit-roll"><h1>昆虫王国</h1><h2>STORY CLEAR</h2><p>昆虫王ムシオウを倒し、</p><p>新たな昆虫王が誕生した。</p>${reward?`<div class="credit-reward">${reward}</div>`:''}<div class="credit-space"></div><h2>CAST</h2><p>昆虫王ムシオウ</p><p>ヘラクレスオオカブト</p><p>コーカサスオオカブト</p><p>ギラファノコギリクワガタ</p><div class="credit-space"></div><h2>THANK YOU</h2><p>512種の昆虫たちと、</p><p>最後まで遊んでくれたあなたへ。</p><div class="credit-space"></div><h1>THE END</h1><p class="credit-small">昆虫王国：インセクトバトル</p></div></div><div class="ending-actions"><button class="btn" onclick="${clearBattle?'B=null;':''}go('${back}')">${back==='story'?'ストーリーへ戻る':'設定へ戻る'}</button></div></div>`}
+V.battle=()=>{if(!B){const ok=S.team.every(u=>gi(u));return`<h2>⚔ 練習バトル</h2><div class="card">編成した3体で戦う練習戦です。報酬・戦績はストーリー／ランク実装時に追加します。</div>`+(ok?['やさしい','ふつう','つよい'].map((n,i)=>`<button class="btn${i===1?'':' sub'}" style="margin:6px 0" onclick="startB(${i})">${n}相手と戦う</button>`).join(''):`<div class="card">先に編成でメイン1体とサポート2体を選んでください。</div><button class="btn" onclick="go('team')">編成へ</button>`)}
+if(B.ph==='end'&&B.win&&B.cx&&B.cx.t==='story'&&B.cx.id===8)return creditsView('story',B.msg,true);
+let c='';if(B.ph==='hand')c=`<b>じゃんけん：手を選ぼう</b><div class="row">${HN.map((n,i)=>`<button class="btn" onclick="hand(${i})">${n}</button>`).join('')}</div>`;
+else if(B.ph==='act')c=`<b>${B.f==='p'?'先行':'後攻'}です。行動を選ぼう</b><div class="row"><button class="btn" onclick="doAct('atk')">⚔攻撃</button><button class="btn" onclick="doAct('def')">🛡防御</button><button class="btn" onclick="doAct('chg')">🔥溜め</button></div>${B.p.m.q&&B.p.m.q.t==='a'?`<button class="btn" style="margin-top:6px" ${B.p.m.cd>0?'disabled':''} onclick="doAct('uq')">✨ ${B.p.m.q.n}${B.p.m.cd>0?'（あと'+B.p.m.cd+'ターン）':''}</button>`:''}${ULTBTN()}`;
+else c=`<div class="card big">${B.win?'🎉 勝利！':'💥 敗北…'}</div>${B.msg||''}${B.cx?`<button class="btn" onclick="B=null;go('${B.cx.t}')">${B.cx.t==='story'?'ストーリーへ戻る':'ランクへ戻る'}</button>`:`<button class="btn" onclick="startB(${B.d})">もう一度戦う</button>`}<button class="btn sub" style="margin-top:6px" onclick="B=null;go('team')">編成を変える</button>`;
+return`<h2>ターン${B.turn}</h2>${sideH(B.e,'敵の')}${sideH(B.p,'')}${c}<div class="card" style="max-height:32vh;overflow:auto;font-size:.85rem;user-select:text">${B.log.slice(-14).reverse().map(t=>`<div>${t}</div>`).join('')}</div>`};
+/* ---- 第3段階：ストーリー・ランク・報酬・戦績 ---- */
+const ST=[null,
+{n:'草原の出会い',h:'草原',r:'ハルカ',pre:'「図鑑集め、勝負しよう！」',post:'「やるね！次は雑木林へ行ってみて」',e:[11,1,4],k:.7,coin:100,ins:18},
+{n:'雑木林の昆虫使い',h:'雑木林',r:'ゲンさん',pre:'「クワガタ使いの腕、見せてやろう」',post:'「見事だ。水辺にも強者がいるぞ」',e:[21,14,12],k:.8,coin:150,ins:20},
+{n:'清流のホタル',h:'水辺',r:'ミズキ',pre:'「水辺の昆虫は静かで手強いわよ」',post:'「負けちゃった…夏の林で待ってるね」',e:[18,19,23],k:.85,coin:200,ins:19},
+{n:'セミしぐれの木陰',h:'夏の林',r:'ユウ',pre:'「セミの大合唱で集中できるかな？」',post:'「うるさかった？ 山へ向かうなら気をつけて」',e:[15,8,13],k:.9,coin:250,ins:15},
+{n:'山道の勝負',h:'山地',r:'ヤマト',pre:'「ここから先は山の昆虫使いの領域だ」',post:'「蝶の谷に噂の姫がいるらしい」',e:[26,28,16],k:1,coin:300,ins:26},
+{n:'蝶の谷',h:'蝶の谷',r:'アゲハ姫',pre:'「ひらひら舞って、あなたを翻弄しますわ」',post:'「お見事。最後に黒い園へどうぞ」',e:[31,9,22],k:1.05,coin:400,ins:31},
+{n:'黒きクワガタ園',h:'クワガタ園',r:'黒田',pre:'「ここを越えるなら実力を示せ」',post:'「昆虫王が君を待っている…」',e:[30,21,29],k:1.15,coin:500,ins:30,title:'黒き挑戦者'},
+{n:'昆虫王の玉座',h:'昆虫王国',r:'昆虫王ムシオウ',pre:'「我が最強の仲間たちを超えてみせよ！」',post:'「見事だ。今日から君が昆虫王だ！」',e:[34,32,33],k:1.25,coin:1000,ins:35,title:'昆虫王',boss:1}];
+/* ストーリーとレアリティ解放の連動調整：敵チーム・強さk・初回報酬コイン・推奨解放段階(rec)
+   初回報酬合計=12500=解放コスト合計。S1→レア、S2+S3→超レア、S4〜S6→伝説級、S7+S8→神話級の順に解放できる */
+(()=>{const ID=n=>D.find(x=>x.ja===n).id;
+[[1,['トノサマバッタ','モンシロチョウ','オンブバッタ'],1.65,500,0],[2,['ノコギリクワガタ','ニホンミツバチ','クサギカメムシ'],1.1,750,1],[3,['ゲンゴロウ','ゲンジボタル','オオシオカラトンボ'],1.35,750,1],[4,['クマゼミ','ミンミンゼミ','クロゴキブリ'],1.75,1200,2],[5,['ミヤマクワガタ','オオスズメバチ','ハラビロカマキリ'],1.25,1200,2],[6,['オオムラサキ','アゲハ','オオミズアオ'],1.6,1100,2],[7,['オオクワガタ','ノコギリクワガタ','オニヤンマ'],1.25,2500,3],[8,['ヘラクレスオオカブト','コーカサスオオカブト','ギラファノコギリクワガタ'],.9,4500,3]].forEach(([i,n,k,c,r])=>Object.assign(ST[i],{e:n.map(ID),k,coin:c,rec:r}))})();
+const RK=[{n:'ブロンズ',min:0,coin:0},{n:'シルバー',min:1100,coin:200},{n:'ゴールド',min:1250,coin:400},{n:'プラチナ',min:1400,coin:700},{n:'ダイヤモンド',min:1600,coin:1000},{n:'マスター',min:1850,coin:1500}];
+const rk=r=>{let t=0;RK.forEach((x,i)=>{if(r>=x.min)t=i});return t};
+function giveIns(id){const sp=SP[id],z=genSize(sp),t=Date.now(),ins={u:++S.seq,s:id,z,r:sp.rar,t};S.ins.push(ins);S.total++;const rec=S.seen[id]||(S.seen[id]={n:0,min:z,max:z,first:t});rec.n++;rec.min=Math.min(rec.min,z);rec.max=Math.max(rec.max,z);if(S.total%100===0){S.pend.push(S.total/100);lock=true}return ins}
+function startX(ids,k,cx,boss){const t=S.team.map(tu);if(t.some(x=>!x)){const o=$('#toast');o.textContent='先に「編成」で3体を選んでください';o.style.display='block';setTimeout(()=>o.style.display='none',1600);return}
+const E=ids.map(id=>{const s=SP[id],x=mk(s,(s.min+s.max)/2,s.rar);x.atk=Math.round(x.atk*k*10)/10;x.def=Math.round(x.def*k*10)/10;x.max=Math.round(x.max*k);x.hp=x.max;return x});
+if(boss)E.slice(1).forEach(x=>x.u+=1);
+B={p:{m:t[0],s:[t[1],t[2]]},e:{m:E[0],s:[E[1],E[2]]},turn:1,log:['バトル開始！'],ph:'hand',f:null,d:0,cx};
+trig(B.p,B.e,'start','');trig(B.e,B.p,'start','敵の');go('battle')}
+function onEnd(){const c=B.cx;if(!c)return;let m='';
+S.hist.unshift({m:c.t==='story'?'S'+c.id:'R',w:B.win,t:Date.now()});S.hist.length=Math.min(S.hist.length,50);
+if(c.t==='story'&&B.win){const st=ST[c.id];if(!S.story.includes(c.id)){S.story.push(c.id);S.coin+=st.coin;let g='';if(st.ins){const i=giveIns(st.ins);g='／'+SP[st.ins].ja+'（'+i.z+'mm）'}if(st.title&&!S.titles.includes(st.title))S.titles.push(st.title);m=`<div class="card">💬 ${st.post}</div><div class="card">🎁 初回クリア報酬：${st.coin}コイン${g}${st.title?'／称号「'+st.title+'」':''}</div>`}else{const rc=Math.max(30,Math.round(st.coin*.1));S.coin+=rc;m='<div class="card">クリア済み：'+rc+'コイン獲得</div>'}}
+if(c.t==='story'&&B.win){const u=Math.min(4,S.unl||0);if(u<4&&S.coin>=UNL[u])m+=`<div class="card">🔍 コインが賜まりました！「茂みの調査」で${UN[u+1]}を解放できます</div>`}
+if(c.t==='rank'){const dl=B.win?c.up:-c.dn;S.rate=Math.max(0,S.rate+dl);S.bestRate=Math.max(S.bestRate,S.rate);if(B.win)S.coin+=10;m=`<div class="card">レート ${dl>0?'+':''}${dl} → <b>${S.rate}</b>（${RK[rk(S.rate)].n}）</div>`;
+for(let i=1;i<=rk(S.bestRate);i++)if(!S.rk.includes(i)){S.rk.push(i);S.coin+=RK[i].coin;S.titles.push(RK[i].n+'到達');m+=`<div class="card">🏅 ${RK[i].n}到達報酬：${RK[i].coin}コイン／称号</div>`}}
+B.msg=m;flush();if(lock)setTimeout(showResult,800)}
+function stage(id){const s=ST[id];$('#modal').innerHTML=`<div class="modal" onclick="if(event.target===this)this.parentNode.innerHTML=''"><div><h3>第${id}章 ${s.n}</h3><div class="card"><b>${s.r}</b><br>${s.pre}</div><div class="card">推奨：出現レアリティ「${UN[s.rec||0]}」まで解放<br>敵：${s.e.map(x=>SP[x].ja).join('、')}${s.boss?'<br>⚠ ボス：サポートスキルが強化されています':''}<br>初回報酬：${s.coin}コイン／${SP[s.ins].ja}${s.title?'／称号':''}</div><button class="btn" onclick="$('#modal').innerHTML='';startX(ST[${id}].e,ST[${id}].k,{t:'story',id:${id}},ST[${id}].boss)">挑戦する</button></div></div>`}
+function rankGo(){const t=rk(S.rate),pk=l=>l[rnd(l.length)];startX([Math.min(4,t),Math.min(2,t),Math.min(2,t)].map(m=>pk(D.filter(s=>s.rar<=m)).id),.75+.1*t,{t:'rank',up:25,dn:18})}
+V.story=()=>`<h2>📜 ストーリー</h2><div class="card muted">昆虫の生息地をめぐり、ライバルと戦おう。進行 ${S.story.length}/8</div>`+ST.slice(1).map((s,i)=>{const id=i+1,ok=id===1||S.story.includes(id-1),cl=S.story.includes(id);return`<div class="card" style="${ok?'cursor:pointer':'opacity:.5'}" ${ok?`onclick="stage(${id})"`:''}><b>第${id}章 ${s.n}</b> ${cl?'✅':ok?'':'🔒'}<br><small>${s.h}／${s.r}${s.boss?'（ボス）':''}／推奨：${UN[s.rec||0]}解放</small></div>`}).join('');
+V.rank=()=>{const t=rk(S.rate),nx=RK[t+1],h=S.hist.filter(x=>x.m==='R'),w=h.filter(x=>x.w).length;return`<h2>🏆 ランクモード</h2><div class="card" style="text-align:center"><div class="big">${RK[t].n}</div>レート <b>${S.rate}</b>／最高 ${RK[rk(S.bestRate)].n}（${S.bestRate}）${nx?`<br><small>次のランクまで あと${nx.min-S.rate}</small>`:''}</div><div class="card muted">対戦相手は<b>AIチーム</b>です（オンライン対戦は未実装）。レートが高いほど強くなります。</div><button class="btn" onclick="rankGo()">ランクバトル開始</button><div class="card">ランク戦績（直近${h.length}戦）：${w}勝${h.length-w}敗</div><h3>到達報酬</h3><div class="card">${RK.slice(1).map((x,i)=>`<div class="line"><span>${x.n}（レート${x.min}〜）</span><b>${x.coin}コイン${S.rk.includes(i+1)?' ✅':''}</b></div>`).join('')}</div>`};
+const rec=()=>{const h=S.hist,w=h.filter(x=>x.w).length;return`<div class="card"><div class="line"><span>ストーリー</span><b>${S.story.length}/8章</b></div><div class="line"><span>ランク</span><b>${RK[rk(S.rate)].n}（${S.rate}）／最高${RK[rk(S.bestRate)].n}</b></div><div class="line"><span>コイン</span><b>${S.coin}</b></div><div class="line"><span>直近${h.length}戦</span><b>${w}勝${h.length-w}敗</b></div></div><h3>称号</h3><div class="card">${S.titles.length?S.titles.join('、'):'まだありません'}</div><h3>最近の対戦</h3><div class="card">${h.slice(0,10).map(x=>`<div class="line"><span>${x.m==='R'?'ランク':'ストーリー第'+x.m.slice(1)+'章'}</span><b>${x.w?'勝ち':'負け'}</b></div>`).join('')||'まだ対戦がありません'}</div>`};
+function doUnl(i){if(i!==(S.unl||0)||i>3||S.coin<UNL[i])return;S.coin-=UNL[i];S.unl=i+1;flush();go('unlock')}
+V.unlock=()=>{const u=Math.min(4,S.unl||0),lim=UL[u];let sum=0;for(let i=0;i<=lim;i++)sum+=RW[i];
+const rate=RW.map((w,i)=>i<=lim?w/sum*100:0),grp=[[0],[1],[2],[3],[4]];
+const row=(g,i)=>{const p=g.reduce((a,r)=>a+rate[r],0);return`<div class="line"><span>${UN[i]}</span><b>${p>0?(Math.round(p*10)/10)+'%':'未解放（0%）'}</b></div>`};
+return`<h2>🔍 茂みの調査</h2><div class="card">所持コイン <b class="big">${S.coin}</b><br><small>ストーリー・ランクの勝利でコインを獲得。コインで茂みに出現するレアリティの上限を解放します（昆虫の購入はできません）。</small></div><h3>現在の出現率</h3><div class="card">${grp.map(row).join('')}</div><h3>解放段階</h3>`+UNL.map((c,i)=>{const rr=[1,2,3,4][i],done=u>i,next=u===i,short=Math.max(0,c-S.coin),ex=BY[rr].slice(0,4).map(s=>s.ja).join('、');
+return`<div class="card rar${rr}"><b>第${i+1}段階：${UN[i+1]}を解放</b> ${done?'✅解放済み':''}<br>必要：${c}コイン／所持：${S.coin}<br><small>出現例：${ex}…</small>${done?'':`<button class="btn" style="margin-top:6px" ${next&&short<=0?'':'disabled'} onclick="doUnl(${i})">${next?(short>0?'あと'+short+'コイン不足':'解放する'):'前の段階を先に解放'}</button>`}</div>`}).join('')};
+/* ===== 必殺技・一発逆転システム =====
+   GG=ゲージ増加量(後から調整可)、ULT=必殺技データ(技名/倍率m/複数ヒットh/防御無視p/条件ボーナス/付与効果/演出look/音snd)
+   ダメージは共通関数 ult0 で「基礎(攻撃×倍率−防御軽減, 防御無視p) → 条件倍率 → 防御側補正 → シールド」の順に計算 */
+const GG={hit:20,hurt:10,jan:10};
+const ULT={
+'ヘラクレスオオカブト':{n:'ヘラクレス・アポカリプス',m:2.5,p:.3,low:[.25,1.4],look:{c:'#f0b429',a:'impact'},snd:'power',big:1},
+'ギラファノコギリクワガタ':{n:'ギラファ・インフィニティエッジ',h:[.75,.75,.75],lb:.35,lbLow:[.3,.3],look:{c:'#7fd8ff',a:'slash'},snd:'fast',big:1},
+'アクタエオンゾウカブト':{n:'タイタン・メテオクラッシュ',m:2.3,p:.2,foeLow:[.3,1.25],look:{c:'#b08968',a:'impact'},snd:'power',big:1},
+'コーカサスオオカブト':{n:'トリプルホーン・ディバイン',m:2,p:.25,self:['db',.3,2],look:{c:'#ffd166',a:'impact'},snd:'power'},
+'パラワンオオヒラタクワガタ':{n:'パラワン・デッドロック',m:2.2,p:.4,dispel:1,look:{c:'#ff6b6b',a:'impact'},snd:'power'},
+'マンディブラリスフタマタクワガタ':{n:'ツインシザー・テンペスト',h:[.8,.8],all:1.25,foe:[['ab',-.2,2]],look:{c:'#ff7bd5',a:'cross'},snd:'fast'},
+'グランディスオオクワガタ':{n:'グランディス・ゼロカウンター',zc:1,look:{c:'#9be7ff',a:'impact'},snd:'rev'},
+'エレファスゾウカブト':{n:'エレファス・アースシェイカー',m:2,miss:[.75,.6],pe:[.25,.3],look:{c:'#c9a66b',a:'impact'},snd:'power'},
+'オオスズメバチ':{n:'ヴェノム・ライトニング',h:[.6,.6,.6],foeSpd:[.25],foe:[['ab',-.25,2]],look:{c:'#ffe600',a:'slash'},snd:'fast'},
+'オニヤンマ':{n:'ドラゴンフライト・オーバードライブ',m:1.8,first:1.3,dv:.6,look:{c:'#6ee7b7',a:'wind'},snd:'fast'},
+'ミヤマクワガタ':{n:'ミヤマ・ラストリベンジ',m:1.8,rv:1.5,rv2:1.2,look:{c:'#b388ff',a:'impact'},snd:'rev'},
+'カブトムシ':{n:'ビートル・キングダムバースト',m:2,miss:[.8,.5],low:[.2,1.25],look:{c:'#ffc107',a:'impact'},snd:'rev'},
+'ナナホシテントウ':{n:'セブンスター・ミラクル',m:1.5,heal:[.3,.15],dispelAtk:.25,look:{c:'#ff5a5a',a:'stars'},snd:'rev'},
+'ギンヤンマ':{n:'スカイ・ファントムブレイク',m:1.8,first:1.25,dv:.4,look:{c:'#5cc8ff',a:'wind'},snd:'fast'},
+'ノコギリクワガタ':{n:'ソウブレード・オーバースラッシュ',m:2,hc:[.1,5],look:{c:'#ff5252',a:'slash'},snd:'power'}};
+const SUPC={atk:['first','pre','rev','chase','rally'],def:['guard','tgd','shield','second','tie','last'],heal:['heal','aid','rc'],foe:['weaken','wk','seal']};
+const gg=(m,v)=>{const was=m.gg||0;m.gg=Math.min(100,was+v);if(was<100&&m.gg>=100&&m.U&&B&&m===B.p.m){L('🌟 必殺ゲージMAX！必殺技が使える！');sfx('sup')}};
+function addEff(m,k,v,t){m.eff=m.eff||[];m[k]=(m[k]||0)+v;m.eff.push({k,v,t})}
+function dispelBuff(o,keys){let n=0;o.eff=(o.eff||[]).filter(e=>{if(e.v>0&&keys.includes(e.k)){o[e.k]-=e.v;n++;return false}return true});if(keys.includes('db')){if(o.tb){o.db-=o.tb.v;o.tb=null;n++}if(o.db>0){o.db=0;n++}if(o.td>0||o.df||o.gd){o.td=0;o.df=0;o.gd=0;n++}}if(keys.includes('ab')){if(o.ab>0){o.ab=0;n++}if(o.ta>0){o.ta=0;n++}}return n}
+function shieldCut(op,d,og){if(d>=op.m.max*.25){const s=op.s.find(x=>(x.sk==='shield'||x.sk==='tgd')&&x.u>0);if(s){const K=SK[s.sk];s.u--;d=Math.max(1,Math.round(d*(1-K.a)));L(`${K.fx} ${og}${s.nm}の【${K.n}】発動！ダメージ軽減`)}}return d}
+function ultSup(me,I,tg){const r={};for(const c in SUPC){const x=me.s.find(y=>SUPC[c].includes(y.sk));if(x){r[c]=x;I.sup.push(x.nm);L(`🤝 ${tg}${x.nm}が連携！`+({atk:'必殺技の威力+10%',def:'発動後の被ダメージ軽減',heal:'命中時にHP少量回復',foe:'命中時に相手の攻撃力ダウン'})[c])}}return r}
+function zcHit(me,op,tg,og,mu,lbl,I){const m=me.m,o=op.m;let d=dmg(m,o,mu,0);if(o.df)d*=.5;d=shieldCut(op,Math.max(1,Math.round(d)),og);o.hp=Math.max(0,o.hp-d);gg(o,GG.hurt);L(`⚔ ${tg}${m.nm}の${lbl}！ ${og}${o.nm}に${d}ダメージ（残HP ${o.hp}/${o.max}）`);if(I){I.hits.push(d);I.total+=d}}
+function zcFire(ds,as,dtg,atg){const m=ds.m;if(!m.zc||m.hp<=0||as.m.hp<=0)return;m.zc=0;const I={s:ds===B.p?'p':'e',nm:m.nm,em:m.em,U:m.U,hits:[],total:0,sup:[],counter:1};B.mute=1;try{zcHit(ds,as,dtg,atg,2,'ゼロカウンター',I)}finally{B.mute=0}B.q.push(I)}
+function zcEnd(){B.mute=1;try{for(const[s,o,t,ot]of[[B.p,B.e,'','敵の'],[B.e,B.p,'敵の','']]){const m=s.m;if(m.zc&&m.hp>0&&o.m.hp>0){m.zc=0;const I={s:s===B.p?'p':'e',nm:m.nm,em:m.em,U:m.U,hits:[],total:0,sup:[],direct:1};zcHit(s,o,t,ot,1.2,'必殺・直接攻撃',I);B.q.push(I);if(o.m.hp<=0){B.ph='end';B.win=s===B.p;break}}}}finally{B.mute=0}}
+function ult(me,op,tg,og,first){B.mute=1;try{ult0(me,op,tg,og,first)}finally{B.mute=0}}
+function ult0(me,op,tg,og,first){const m=me.m,U=m.U,o=op.m,H=U.h||[U.m||1];m.gg=0;m.ul=B.turn;
+const I={s:me===B.p?'p':'e',nm:m.nm,em:m.em,U,hits:[],total:0,sup:[]};
+L(`🌟 ${tg}${m.nm}の必殺技【${U.n}】発動！`);const sp=ultSup(me,I,tg);
+if(U.zc){if(first){m.zc=1;I.field=1;L(`🛡 ${tg}${m.nm}が防御フィールドを展開！次の攻撃を受け止めて反撃する`)}else zcHit(me,op,tg,og,1.2,'必殺・直接攻撃',I);B.q.push(I);return}
+if(U.dispel&&dispelBuff(o,['db'])){I.note='防御強化を解除！';L(`💥 ${og}${o.nm}の防御強化を解除！`)}
+if(o.dv){o.dv=0;if(Math.random()<(o.dvp||.5)){L(`💨 ${og}${o.nm}は必殺技をかわした！`);I.dodge=1;B.q.push(I);return}}
+let pen=U.p||0;if(U.pe&&m.hp<=m.max*U.pe[0])pen+=U.pe[1];pen=Math.min(.9,pen);
+let c=1;if(U.low&&m.hp<=m.max*U.low[0])c*=U.low[1];if(U.miss)c*=1+U.miss[1]*Math.min(1,(1-m.hp/m.max)/U.miss[0]);
+if(U.foeLow&&o.hp<=o.max*U.foeLow[0])c*=U.foeLow[1];if(U.rv&&m.hp<o.hp)c*=U.rv;if(U.rv2&&m.hp<=m.max*.2)c*=U.rv2;
+if(U.first&&first)c*=U.first;if(U.hc)c*=1+Math.min(U.hc[1],m.hitc||0)*U.hc[0];if(sp.atk)c*=1.1;
+let zcf=0,ok=0;
+for(let i=0;i<H.length&&o.hp>0;i++){let d=dmg(m,o,H[i],pen)*c;const last=i===H.length-1;
+if(last&&H.length>1&&ok===H.length-1){if(U.lb)d*=1+U.lb+(U.lbLow&&m.hp<=m.max*U.lbLow[0]?U.lbLow[1]:0);if(U.all)d*=U.all}
+if(o.df)d*=.5;if(first)d*=.9;if(o.tg)d*=1-o.tg;if(o.gd){o.gd=0;d*=.5}if(o.zc&&!zcf){d*=.3;zcf=1}
+d=shieldCut(op,Math.max(1,Math.round(d)),og);o.hp=Math.max(0,o.hp-d);ok++;I.hits.push(d);I.total+=d;
+L(`⚔ ${tg}${m.nm}の必殺技！ ${H.length>1?(i+1)+'HIT ':''}${og}${o.nm}に${d}ダメージ（残HP ${o.hp}/${o.max}）`)}
+gg(o,GG.hurt);
+if(o.hp>0){if(U.foe)U.foe.forEach(e=>addEff(o,e[0],e[1],e[2]));if(U.foeSpd)addEff(o,'spd',-Math.round((o.spd||50)*U.foeSpd[0]),2);if(sp.foe)addEff(o,'ab',-.1,1);
+if(U.dispelAtk&&Math.random()<U.dispelAtk&&dispelBuff(o,['ab'])){I.note='攻撃力上昇を解除！';L(`💥 ${og}${o.nm}の攻撃力上昇を解除！`)}}
+if(U.self)addEff(m,U.self[0],U.self[1],U.self[2]);
+if(U.heal&&m.hp<=m.max*U.heal[0]){const h=Math.min(m.max-m.hp,Math.round(m.max*U.heal[1]));if(h>0){m.hp+=h;I.heal=h;L(`💚 ${tg}${m.nm}のHPが${h}回復！`)}}
+if(sp.heal){const h=Math.min(m.max-m.hp,Math.round(m.max*.05));if(h>0){m.hp+=h;L(`💗 連携回復 HP+${h}`)}}
+if(sp.def)addEff(m,'db',.15,1);
+if(U.dv){m.dv=1;m.dvp=U.dv;L(`🌀 ${tg}${m.nm}は次の攻撃を回避しやすくなった`)}
+B.q.push(I);if(zcf)zcFire(op,me,og,tg)}
+function ULTBTN(){const m=B.p.m,U=m.U;if(!U)return'';const r=m.gg>=100;return`<button class="btn ult${r?' rdy':''}" style="margin-top:6px" ${r?'':'disabled'} onclick="doAct('ult')">🌟 ${U.n}${r?'':'（ゲージあと'+(100-Math.round(m.gg||0))+'%）'}</button>`}
+function hpAnim(){if(view!=='battle'||!B||!document.querySelectorAll)return;requestAnimationFrame(()=>{document.querySelectorAll('.bar i[data-n]').forEach(e=>{e.style.width=e.dataset.n+'%'});if(B){B.p.m.ph=null;B.e.m.ph=null}})}
+function playQ(){const q=B.q||[];B.q=[];const fin=()=>{B.lock=false;if(B.pendSE){sfx(B.pendSE);bgmStop();B.pendSE=null}bgmVol();go('battle')};
+if(!q.length){fin();return}B.lock=true;let i=0;const next=()=>{if(i>=q.length)fin();else ultFx(q[i++],next)};next()}
+function ultSnd(I,ph,i){if(!S.set.sfx)return;try{const A=audio();if(!A)return;const o=A.createGain();o.gain.value=.34*sv();o.connect(busOut(A));const t=A.currentTime+.01,p=I.U.snd;
+if(ph==='charge'){tn(A,o,p==='rev'?70:80,t,p==='rev'?.35:.5,.55,'sawtooth',p==='rev'?110:220)}
+else if(ph==='name'){(p==='rev'?[262]:[262,330,392,523]).forEach((f,k)=>tn(A,o,f,t+k*.09,.2,.35,'triangle'))}
+else if(ph==='rush'){if(p==='fast'){ns(A,o,t,.25,.5,1200,1,'bandpass',5000);tn(A,o,1500,t,.12,.25,'square',2400);tn(A,o,1800,t+.1,.1,.2,'square',2800)}else if(p==='power'){ns(A,o,t,.3,.5,300,1,'lowpass',1800);tn(A,o,120,t,.3,.5,'sawtooth',300)}}
+else if(ph==='hit'){ns(A,o,t,.14,.9,1500,.8,'bandpass');tn(A,o,p==='power'?130:200,t,.3,1,'sine',p==='power'?40:70);if(p==='power')tn(A,o,1100,t+.03,.4,.3,'triangle');if(p==='fast')tn(A,o,2200,t,.1,.25,'square')}
+else if(ph==='fin'){tn(A,o,90,t,.5,1,'sine',30);if(p!=='fast')[523,784,1046,1568].forEach((f,k)=>tn(A,o,f,t+k*.04,.45,.35,'triangle'));else{tn(A,o,1760,t,.25,.3,'square');tn(A,o,2637,t+.05,.3,.2,'triangle')}ns(A,o,t,.2,.6,4000,1,'highpass')}
+setTimeout(()=>{try{o.disconnect()}catch(e){}},2200)}catch(e){}}
+function fxHit(el,a,c,i){const d=document.createElement('div');d.style.setProperty('--uc',c);
+if(a==='slash'||a==='wind'){d.className='fxs '+a+(a==='slash'?' r'+(i%2):'');d.style.top=(a==='wind'?20+i*16:22+i*12)+'%'}
+else if(a==='cross'){d.className='fxs cross';d.innerHTML='<i></i><i></i>'}
+else if(a==='stars'){d.className='fxst';d.innerHTML=[0,1,2,3,4,5,6].map(k=>`<i style="--a:${k*51}deg"></i>`).join('')}
+else{d.className='fxr';d.innerHTML='<i></i><i></i>'}
+el.appendChild(d);setTimeout(()=>d.remove(),900)}
+function ultFx(I,done){const el=$('#ult');if(!el||!el.style||!el.style.setProperty||!document.createElement){done();return}
+const lk=I.U.look||{},c=lk.c||'#fff',sm=S.set.simple,k=(sm?.3:1)*(I.U.big?1.25:1),T=[];let fin=false;
+const at=(ms,f)=>T.push(setTimeout(f,ms*k));
+const end=()=>{if(fin)return;fin=true;T.forEach(clearTimeout);el.style.display='none';el.innerHTML='';el.className='';document.body.classList&&document.body.classList.remove('shk');bgDucked=false;bgmVol();done()};
+el.style.setProperty('--uc',c);el.className='';
+const nH=Math.max(1,I.hits.length),tH=1250+nH*330,tE=tH+1000;
+el.innerHTML=`<div class="dim"></div><div class="ins">${I.em}</div><div class="nm">${I.counter?'カウンター！ ':''}${I.U.n}</div><div class="fl"></div><div class="dmg"></div><div class="sp"></div>`;el.style.display='block';el.onclick=end;
+bgDucked=true;bgmVol();
+at(0,()=>{el.classList.add('on');ultSnd(I,'charge')});
+if(!sm)at(250,()=>el.classList.add('show'));
+at(700,()=>{el.classList.add('nmz');ultSnd(I,'name')});
+at(1250,()=>ultSnd(I,'rush'));
+if(!I.dodge&&!I.field)for(let i=0;i<nH;i++)at(1300+i*330,()=>{if(!sm)fxHit(el,lk.a,c,i);ultSnd(I,'hit',i);if(I.hits.length>1){const h=document.createElement('div');h.className='ht';h.style.left=(25+Math.random()*45)+'%';h.style.top=(28+i*9)+'%';h.textContent=(i+1)+' HIT';el.appendChild(h)}});
+at(tH,()=>{const f=el.querySelector('.fl'),d=el.querySelector('.dmg'),sp=el.querySelector('.sp');
+if(!S.set.noflash&&!sm)f.classList.add('go');if(!S.set.noshake&&!sm)document.body.classList.add('shk');
+d.textContent=I.dodge?'かわされた！':I.field?'防御フィールド展開！':I.total;d.classList.add('go');
+sp.textContent=[I.note,I.heal?'HP+'+I.heal:'',I.sup.length?'🤝連携：'+I.sup.join('・'):''].filter(Boolean).join('　');ultSnd(I,'fin')});
+at(tE,end)}
+
+function seTest(){['jk','jw','hit','guard','chg','skill','sup','heal','dodge','win'].forEach((k,i)=>setTimeout(()=>sfx(k,k==='hit'?1:0),i*420))}
+function bgmTest(th){if(!B||view!=='battle')bgmStart(th||'btl')}
+function zf(k,v){S.zf[k]=v;go('zukan')}
+function detail(id){const s=SP[id],r=S.seen[id];
+ $('#modal').innerHTML=`<div class="modal" onclick="if(event.target===this)this.parentNode.innerHTML=''"><div class="rar${s.rar}"><div class="hero">${ic(s)}<div><b>${r?s.ja:'？？？'}</b> <span class="tag">${RN[s.rar]}</span><br><small>${r?s.sci:'未捕獲'}</small></div></div>
+ ${r?`<div class="card">${s.desc}</div><div class="card"><div class="line"><span>分類</span><span>${CL[s.cls]}</span></div><div class="line"><span>参考体長</span><span>約${s.min}〜${s.max}mm<br><small>${s.src?'出典：'+s.src:'※概数（未照合）'}</small></span></div><div class="line"><span>生息地</span><span>${s.hab}</span></div><div class="line"><span>活動時期</span><span>${s.sea}</span></div>
+ <div class="line"><span>累計捕獲数</span><b>${r.n}体</b></div><div class="line"><span>最大／最小サイズ</span><span>${r.max}mm／${r.min}mm</span></div><div class="line"><span>初捕獲</span><span>${new Date(r.first).toLocaleString('ja-JP')}</span></div></div>`:`<div class="card">分類：${CL[s.cls]}<br>捕まえると詳細が見られます。</div>`}
+ <button class="btn sub" onclick="this.closest('.modal').parentNode.innerHTML=''">閉じる</button></div></div>`}
+const NAV=[['home','🏠','ホーム'],['bush','🌿','捕獲'],['zukan','📖','図鑑'],['box','🧺','所持'],['team','🛡','編成'],['story','📜','物語'],['rank','🏆','ランク'],['set','⚙','設定']];
+function go(v){view=v;$('#app').innerHTML=V[v]();$('#nav').innerHTML=NAV.map(n=>`<button class="${n[0]===v?'on':''}" onclick="go('${n[0]}')"><span>${n[1]}</span>${n[2]}</button>`).join('');
+ if(v==='bush'){const b=$('#bush');b.addEventListener('pointerdown',e=>{e.preventDefault();catchOne()});b.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();catchOne()}})}
+ if(v==='set'){let a=0;$('#rs').onclick=function(){if(!a){a=1;this.textContent='もう一度押すと全データを削除します'}else{S=fresh();flush();go('home')}}}
+ if(v!=='bush')NEWSP=null;bgmCtl();hpAnim();if(v==='bush')renderNew();scrollTo(0,0)}
+go('home');if(S.pend.length){lock=true;showResult()}
+</script></body></html>

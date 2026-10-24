@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f0e9">
+  <meta name="description" content="紙を半分に折って、観測可能な宇宙の果てを目指そう。">
+  <title>Just Folding</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./game.js" defer></script>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Just Folding ホーム"><span class="brand-mark">折</span><span>Just Folding<span class="brand-sub">宇宙の果てを目指せ</span></span></a>
+      <div class="top-actions">
+        <span class="saved-indicator"><i></i> 記録を保存中</span>
+        <button class="icon-button" id="settings-button" type="button" aria-label="設定を開く" title="設定">⚙</button>
+        <button class="icon-button" id="sound-button" type="button" aria-label="効果音をオフにする" title="効果音">🔊</button>
+      </div>
+    </header>
+
+    <section class="hero" aria-label="現在の記録">
+      <div class="hero-heading"><span class="eyebrow">YOUR COSMIC JOURNEY</span><span class="hero-stage" id="stage-label">第1章 · はじまり</span></div>
+      <div class="stats-grid">
+        <article class="stat-card fold-stat"><span class="stat-label">折り回数</span><div class="stat-value"><span id="fold-count">0</span><span class="stat-unit">回</span></div><span class="stat-foot">折るたびに厚さは2倍</span></article>
+        <article class="stat-card thickness-stat"><span class="stat-label">現在の紙の厚さ</span><div class="stat-value" id="thickness-value">0.1 mm</div><span class="stat-foot">今回の増加 <b id="thickness-gain">—</b></span></article>
+        <article class="stat-card target-stat"><div class="target-title"><span class="stat-label">次の目標</span><span id="progress-label">0%</span></div><div class="target-name" id="target-name">1 cm · 身近なもの</div><div class="target-value" id="target-value">10 mm</div><div class="progress-track"><span id="progress-bar"></span></div><div class="target-foot"><span id="progress-detail">あと 10 mm</span><span id="goal-count">0 / 30</span></div></article>
+      </div>
+    </section>
+
+    <section class="play-layout">
+      <div class="paper-panel">
+        <div class="panel-heading"><div><span class="eyebrow">THE FOLDING DESK</span><h1>紙を半分に折ろう</h1></div><span class="live-badge" id="live-badge"><i></i> 操作できます</span></div>
+        <div class="fold-controls" role="group" aria-label="折る向き">
+          <span class="control-label">折る向き</span>
+          <button class="direction-button selected" id="horizontal-fold" type="button" aria-pressed="true">↔ 横から折る</button>
+          <button class="direction-button" id="vertical-fold" type="button" aria-pressed="false">↕ 縦から折る</button>
+          <span class="fold-hint" id="fold-hint">紙の四辺から反対側の辺へドラッグ</span>
+        </div>
+        <div class="paper-stage" id="paper-stage">
+          <div class="stage-caption"><span>YOUR PAPER</span><span id="paper-size-label">まっさらな一枚</span></div>
+          <canvas id="paper-canvas" aria-label="紙の上・下・左・右の端をつかみ、反対側の端に合わせると折れます" role="img"></canvas>
+          <div class="stage-message" id="stage-message">紙の四辺から、反対側の辺に合わせよう</div>
+          <div class="stage-bottom"><span>上・下・左・右、どの辺からでも折れます</span><span>反対側の辺から5%以内で成功</span></div>
+        </div>
+        <div class="progression-note"><span class="note-icon">✦</span><span>紙の厚みは無限に広がる。月を越えても、銀河を越えても、旅は続く。</span></div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="mission-card">
+          <div class="mission-top"><span class="eyebrow">MISSION <span id="mission-index">01</span></span><span class="mission-icon" id="mission-icon">🌱</span></div>
+          <h2 id="mission-title">小さな一歩</h2>
+          <p id="mission-description">紙を折って、身近なものより厚くしよう。</p>
+          <div class="mission-divider"></div>
+          <div class="mission-metric"><span>目標まで</span><strong id="mission-remaining">あと 10 mm</strong></div>
+        </div>
+        <div class="milestone-card">
+          <div class="section-heading"><div><span class="eyebrow">MILESTONES</span><h2>旅のしるし</h2></div><button class="text-button" id="open-atlas" type="button">図鑑をみる ↗</button></div>
+          <div class="milestone-list" id="milestone-list"></div>
+          <button class="all-goals-button" id="show-all-goals" type="button">すべての目標を見る <span>→</span></button>
+        </div>
+        <div class="record-card">
+          <div class="section-heading"><div><span class="eyebrow">YOUR BEST</span><h2>これまでの記録</h2></div><span class="record-icon">🏅</span></div>
+          <div class="record-grid"><div><span>最高記録</span><strong id="best-folds">0 回</strong></div><div><span>折り成功</span><strong id="total-folds">0 回</strong></div></div>
+          <button class="reset-button" id="reset-button" type="button">記録をリセット</button>
+        </div>
+      </aside>
+    </section>
+    <footer><span>紙の厚さだけで、宇宙の大きさに挑戦。</span><span>観測可能な宇宙の半径が、最後の目標です。</span></footer>
+  </main>
+
+  <div class="overlay" id="event-overlay" role="dialog" aria-modal="true" aria-labelledby="event-title" hidden>
+    <div class="event-backdrop" id="event-backdrop"></div><div class="event-card">
+      <button class="close-button" id="skip-event" type="button" aria-label="演出をスキップ">×</button>
+      <div class="event-sky" id="event-sky"><div class="event-art" id="event-art">🌙</div><div class="event-orbit orbit-one"></div><div class="event-orbit orbit-two"></div><div class="event-earth" aria-hidden="true">🌍</div><div class="event-beam" aria-hidden="true"></div><div class="event-moon" aria-hidden="true">🌕</div></div>
+      <span class="eyebrow" id="event-kicker">MILESTONE REACHED</span><h2 id="event-title">月に到達！！</h2><p class="event-description" id="event-description"></p>
+      <div class="comparison"><div><span id="event-paper-label">紙の厚さ</span><strong id="event-paper"></strong></div><span class="comparison-symbol" id="comparison-symbol">÷</span><div><span id="event-goal-label">目標の距離</span><strong id="event-goal"></strong></div><div class="times-value"><strong id="event-times"></strong><span id="event-times-unit">倍</span></div></div>
+      <div class="event-footnote" id="event-footnote"></div>
+      <div class="share-row" role="group" aria-label="結果をシェア"><span class="share-label">結果をシェア</span><div class="share-buttons"><button class="secondary-button share-button" id="share-x" type="button">𝕏 でポスト</button><button class="secondary-button share-button" id="share-line" type="button">LINE</button><button class="secondary-button share-button" id="share-native" type="button" hidden>共有…</button><button class="secondary-button share-button" id="share-copy" type="button">コピー</button></div></div>
+      <button class="primary-button" id="continue-button" type="button">旅を続ける <span>→</span></button>
+      <button class="secondary-button clear-retry-button" id="clear-retry-button" type="button" hidden>もう一度挑戦する</button>
+      <button class="secondary-button clear-settings-button" id="clear-settings-button" type="button" hidden>設定</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-card"><button class="close-button" id="close-modal" type="button" aria-label="閉じる">×</button><span class="eyebrow" id="modal-kicker">YOUR COSMIC JOURNEY</span><h2 id="modal-title">天体図鑑</h2><p class="modal-description" id="modal-description"></p><div class="atlas-grid" id="atlas-grid"></div><div class="modal-actions" id="modal-actions"></div></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
