@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TrustMe</title>
+<style>
+:root{--bg:#14121f;--fg:#f3efe6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#14121f;--fg:#f3efe6}}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center}
+canvas{display:block;width:100%;max-width:800px;height:auto;image-rendering:pixelated;touch-action:none}
+#t{display:flex;gap:10px;margin-top:8px;width:100%;max-width:800px;justify-content:center}
+#t button{flex:1;max-width:120px;padding:14px 0;font-size:20px;border:0;border-radius:10px;background:#2c2a44;color:var(--fg);touch-action:none;user-select:none}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="t"><button id="bl">◀</button><button id="br">▶</button><button id="bj">JUMP</button></div>
+<script>
+const T=32,W=800,H=448,cv=document.getElementById('c'),g=cv.getContext('2d');cv.width=W;cv.height=H;
+const L=[
+{n:'1-1 信用の練習',w:56,s:[2,10],g:[52,10],
+ S:[[0,12,12,2],[15,12,13,2],[31,12,6,2],[40,12,16,2]],sp:[],fk:[[28,12,3]],fs:[],
+ c:[{x:38,y:11,on:[],off:['f']}],
+ sg:[{x:4,y:11,t:'右へ進んでください。Spaceでジャンプ'},{x:17,y:11,t:'この先は安全です'},{x:34,y:11,t:'そのコインは取らないでください'},{x:49,y:11,t:'ゴールはあちらです'}],
+ d:{a:{r:[24,11,2,1],k:'sp',on:0},f:{r:[37,12,3,2],k:'so',on:1}},
+ tr:[{r:[21,9,1,3],on:['a'],off:[]}],fg:[],
+ hint:'嘘の看板の先では足元に注意。普通の地面に見える足場も、渡らずに飛び越える。'},
+{n:'1-2 疑心暗鬼',w:56,s:[2,10],g:[52,7],
+ S:[[0,12,13,2],[16,12,8,2],[38,9,6,5],[47,9,9,5]],sp:[],fk:[[26,11,2],[30,10,2],[34,9,2]],fs:[[7,11,3]],
+ c:[],
+ sg:[{x:4,y:11,t:'トゲは本物です。触れたら即死です'},{x:11,y:11,t:'絶対にジャンプしてください'},{x:18,y:11,t:'この先は安全です'},{x:40,y:8,t:'ここは安全です'},{x:50,y:8,t:'ゴールはすぐそこです'}],
+ d:{g:{r:[44,9,3,5],k:'so',on:1}},
+ tr:[{r:[43,7,1,2],on:[],off:['g']}],fg:[],
+ hint:'怪しい見た目が安全とは限らない。足場は止まらずに進み、床が消えたら即ジャンプ。'},
+{n:'1-3 裏切り',w:48,s:[1,10],g:[43,10],
+ S:[[0,12,10,2],[18,12,30,2],[20,10,2,1],[23,8,3,1]],sp:[],fk:[],fs:[[28,11,4]],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:2,y:11,t:'今回は本当です'},{x:5,y:11,t:'そのコインは取らないでください'},{x:18,y:11,t:'ゴールはこちら！ 上へどうぞ'},{x:26,y:11,t:'ジャンプして進んでください'},{x:40,y:11,t:'今回は本当です。ここがゴールです'}],
+ d:{b:{r:[10,12,8,1],k:'so',on:0},d:{r:[27,9,5,1],k:'sp',dn:1,on:0}},
+ tr:[{r:[27,8,5,2],on:['d'],off:[]}],fg:[{x:24,y:6}],
+ hint:'1-1で学んだ「コインは罠」は通用しない。ゴール風の扉は偽物。怪しい場所は歩いて進む。'},
+{n:'2-1 逆転',w:46,s:[2,10],g:[41,10],
+ S:[[0,12,12,2],[15,12,30,2]],sp:[],fk:[],fs:[[34,11,4]],c:[],
+ sg:[{x:4,y:11,t:'右へ進んでください'},{x:17,y:11,t:'この先は安全です'},{x:31,y:11,t:'トゲは偽物です。そのまま歩いてください'},{x:39,y:11,t:'ゴールはもうすぐです'}],
+ d:{a:{r:[25,11,1,1],k:'sp',on:0},b:{r:[30,11,1,1],k:'sp',on:0},c:{r:[34,9,4,1],k:'sp',dn:1,on:0}},
+ tr:[{r:[22,9,1,3],on:['a'],off:[]},{r:[27,9,1,3],on:['b'],off:[]},{r:[34,8,4,2],on:['c'],off:[]}],fg:[],
+ hint:'嘘の看板の先ではトゲが出る。でも本当のことを言う看板もある。偽トゲの上ではジャンプしない。'},
+{n:'2-2 思い込み',w:52,s:[2,10],g:[46,10],
+ S:[[0,12,10,2],[21,12,5,2],[29,12,2,2],[34,12,18,2]],sp:[],fk:[[11,12,2],[15,11,2],[19,12,2]],fs:[],c:[],
+ sg:[{x:3,y:11,t:'足場は崩れません'},{x:22,y:11,t:'この先は安全です'},{x:36,y:11,t:'ゴールは逆方向です'},{x:44,y:11,t:'今回は本当です'}],
+ d:{g:{r:[26,12,3,2],k:'so',on:1},h:{r:[31,12,3,2],k:'so',on:1}},
+ tr:[{r:[25,10,1,2],on:[],off:['g']},{r:[30,10,1,2],on:[],off:['h']}],fg:[],
+ hint:'崩れる足場は着地したらすぐ次へ。床が消える手前で、止まらずにジャンプ。'},
+{n:'2-3 崩れる階段',w:60,s:[2,10],g:[55,10],
+ S:[[0,12,10,2],[17,12,8,2],[35,7,6,7],[42,12,6,2],[51,12,8,2]],sp:[],fk:[[26,11,2],[29,9,2],[32,7,2]],fs:[],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:3,y:11,t:'右へ進んでください'},{x:6,y:11,t:'そのコインは取らないでください'},{x:36,y:6,t:'飛び降りてください'},{x:44,y:11,t:'ここは安全です'},{x:53,y:11,t:'今回は本当です'}],
+ d:{b:{r:[10,12,7,1],k:'so',on:0},c:{r:[20,11,1,1],k:'sp',on:0},g:{r:[48,12,3,2],k:'so',on:1}},
+ tr:[{r:[18,9,1,3],on:['c'],off:[]},{r:[47,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'コインが本当に必要な時もある。階段は止まらずに登る。最後の床は消える前に跳ぶ。'},
+{n:'3-1 裏切りの始まり',w:52,s:[2,10],g:[48,10],
+ S:[[0,12,20,2],[23,12,10,2],[36,12,16,2]],sp:[[8,11,3]],fk:[],fs:[],c:[],
+ sg:[{x:5,y:11,t:'トゲは偽物です。歩いて進んでください'},{x:16,y:11,t:'ここは安全です'},{x:38,y:11,t:'今回は本当です'},{x:41,y:11,t:'この先は安全です'},{x:46,y:11,t:'ゴールはこちらです'}],
+ d:{c:{r:[27,11,1,1],k:'sp',on:0},w:{r:[36,8,1,4],k:'so',on:0},e:{r:[43,11,1,1],k:'sp',on:0}},
+ tr:[{r:[25,9,1,3],on:['c'],off:[]},{r:[39,10,1,2],on:['w'],off:[]},{r:[40,9,1,3],on:['e'],off:[]}],fg:[],
+ hint:'今回の「トゲは偽物」は嘘。前のステージの正解を疑う。着地したらすぐ次の跳躍を考える。'},
+{n:'3-2 全部嘘',w:52,s:[2,10],g:[47,10],
+ S:[[0,12,14,2],[17,12,10,2],[30,12,6,2],[40,12,11,2]],sp:[[8,11,2]],fk:[[27,12,3]],fs:[[20,11,3]],c:[],
+ sg:[{x:4,y:11,t:'右は危険です。左へ進んでください'},{x:6,y:11,t:'トゲは偽物です'},{x:19,y:11,t:'トゲに注意してください'},{x:24,y:11,t:'この先の足場は安全です'},{x:32,y:11,t:'ゴールまで安全です'},{x:44,y:11,t:'今回は本当です'}],
+ d:{g:{r:[37,12,3,2],k:'so',on:1}},
+ tr:[{r:[35,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'この面の看板はほぼ全部嘘。逆を行けば良いとは限らないので、足元を見て判断する。'},
+{n:'3-3 信じる者',w:52,s:[1,10],g:[49,10],
+ S:[[0,12,10,2],[18,12,15,2],[36,12,7,2],[46,12,6,2]],sp:[],fk:[],fs:[[26,11,3]],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:3,y:11,t:'そのコインを取ってください'},{x:5,y:11,t:'引き返してください'},{x:24,y:11,t:'ジャンプして進んでください'},{x:37,y:11,t:'この先は安全です'},{x:47,y:11,t:'今回は本当です'}],
+ d:{b:{r:[10,12,8,1],k:'so',on:0},c:{r:[22,11,1,1],k:'sp',on:0},d:{r:[26,9,4,1],k:'sp',dn:1,on:0},w:{r:[36,8,1,4],k:'so',on:0},g:{r:[43,12,3,2],k:'so',on:1}},
+ tr:[{r:[19,9,1,3],on:['c'],off:[]},{r:[26,8,4,2],on:['d'],off:[]},{r:[39,10,1,2],on:['w'],off:[]},{r:[41,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'今度は最初の看板が本当。偽トゲの上ではジャンプしない。最後の床は消える前に跳ぶ。'},
+{n:'4-1 挑発',w:56,s:[2,10],g:[52,10],
+ S:[[0,12,15,2],[18,12,8,2],[29,12,12,2],[44,12,12,2]],sp:[],fk:[[26,12,3],[41,12,3]],fs:[],c:[],
+ sg:[{x:5,y:11,t:'ヒント：「安全です」の看板の先は、足元に注意'},{x:20,y:11,t:'ここは安全です'},{x:31,y:11,t:'どうぞご自由に'},{x:38,y:11,t:'ここは安全です'},{x:50,y:11,t:'おめでとう…と言うとでも？'}],
+ d:{a:{r:[36,11,1,1],k:'sp',on:0}},
+ tr:[{r:[33,9,1,3],on:['a'],off:[]}],fg:[],
+ hint:'「安全です」の看板の先は崩れる足場。飛び越える。'},
+{n:'4-2 忠告の雨',w:58,s:[2,10],g:[54,10],
+ S:[[0,12,14,2],[17,12,14,2],[34,12,14,2],[50,12,8,2]],sp:[],fk:[[31,12,3]],fs:[[20,11,4]],
+ c:[{x:40,y:11,on:['s'],off:[]}],
+ sg:[{x:4,y:11,t:'落ちたら笑います'},{x:18,y:11,t:'トゲは偽物です。歩いてください'},{x:27,y:11,t:'ここは安全です'},{x:38,y:11,t:'そのコインを取ってください'},{x:52,y:11,t:'本当に最後ですよ'}],
+ d:{d:{r:[20,9,4,1],k:'sp',dn:1,on:0},w:{r:[34,8,1,4],k:'so',on:0},s:{r:[43,11,2,1],k:'sp',on:0},g:{r:[48,12,2,2],k:'so',on:1}},
+ tr:[{r:[20,8,4,2],on:['d'],off:[]},{r:[37,10,1,2],on:['w'],off:[]},{r:[46,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'「安全です」は崩れる足場の合図。偽トゲは歩く。コインは飛び越える。'},
+{n:'4-3 作者の本音',w:60,s:[1,10],g:[56,10],
+ S:[[0,12,10,2],[18,12,10,2],[38,7,6,7],[45,12,5,2],[53,12,6,2]],sp:[],fk:[[29,11,2],[32,9,2],[35,7,2]],fs:[],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:3,y:11,t:'そのコインは罠です。見逃してあげましょう'},{x:19,y:11,t:'ヒント：「安全です」は罠の合図です'},{x:27,y:11,t:'ここは安全です'},{x:39,y:6,t:'飛び降りてください'},{x:46,y:11,t:'ここは安全です'},{x:55,y:11,t:'今回は本当です'}],
+ d:{b:{r:[10,12,8,1],k:'so',on:0},g:{r:[50,12,3,2],k:'so',on:1}},
+ tr:[{r:[48,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'コインは必要。「安全です」の先は崩れる階段。最後の床は消える前に跳ぶ。'},
+{n:'5-1 再試験',w:55,s:[2,10],g:[51,10],
+ S:[[0,12,12,2],[15,12,12,2],[30,12,10,2],[43,12,12,2]],sp:[],fk:[[40,12,3]],fs:[[19,11,4]],c:[],
+ sg:[{x:4,y:11,t:'全部疑ってください'},{x:17,y:11,t:'ここは安全です'},{x:35,y:11,t:'ここには何もありません'},{x:46,y:11,t:'私を信用してください'}],
+ d:{d:{r:[19,9,4,1],k:'sp',dn:1,on:0}},
+ tr:[{r:[19,8,4,2],on:['d'],off:[]}],fg:[],
+ hint:'今回は「安全です」が本当。疑って跳ぶと罠にかかる。何もないと言う場所には足場がある。'},
+{n:'5-2 信じ切る者',w:56,s:[1,10],g:[51,10],
+ S:[[0,12,10,2],[18,12,12,2],[33,12,8,2],[44,12,12,2]],sp:[],fk:[[30,12,3]],fs:[[21,11,3]],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:3,y:11,t:'そのコインを取ってください'},{x:19,y:11,t:'トゲは本物です'},{x:27,y:11,t:'ここは安全です'},{x:47,y:11,t:'ここは安全です'}],
+ d:{b:{r:[10,12,8,1],k:'so',on:0},w:{r:[33,8,1,4],k:'so',on:0},g:{r:[41,12,3,2],k:'so',on:1}},
+ tr:[{r:[36,10,1,2],on:['w'],off:[]},{r:[38,10,1,2],on:[],off:['g']}],fg:[],
+ hint:'取れと言われたコインは本当に必要。「安全です」は場所次第。床が消えたらすぐ跳ぶ。'},
+{n:'5-3 大嘘と本音',w:56,s:[2,10],g:[52,10],
+ S:[[0,12,12,2],[15,12,12,2],[19,10,2,1],[22,8,3,1],[30,12,10,2],[43,12,13,2]],sp:[[8,11,2]],fk:[[40,12,3]],fs:[],c:[],
+ sg:[{x:4,y:11,t:'トゲは偽物です'},{x:17,y:11,t:'ゴールはこちら！ 上へどうぞ'},{x:33,y:11,t:'ここは安全です'},{x:46,y:11,t:'今回は本当です'}],
+ d:{},tr:[],fg:[{x:23,y:6}],
+ hint:'ゴール風の扇は偽物。本物は地面を進んだ先。トゲは本物。'},
+{n:'5-4 TrustMe',w:62,s:[1,10],g:[58,10],
+ S:[[0,12,10,2],[18,12,10,2],[31,12,6,2],[40,12,6,2],[49,12,12,2],[52,10,2,1],[55,8,3,1]],sp:[],fk:[[37,12,3]],fs:[[22,11,3]],
+ c:[{x:8,y:11,on:['b'],off:[]}],
+ sg:[{x:3,y:11,t:'そのコインは取らないでください'},{x:20,y:11,t:'ジャンプして進んでください'},{x:33,y:11,t:'ここは安全です'},{x:51,y:11,t:'ゴールはこちら！ 上へどうぞ'},{x:57,y:11,t:'今回は本当です'}],
+ d:{b:{r:[10,12,8,1],k:'so',on:0},d:{r:[22,9,3,1],k:'sp',dn:1,on:0},w:{r:[40,8,1,4],k:'so',on:0},g:{r:[46,12,3,2],k:'so',on:1}},
+ tr:[{r:[22,8,3,2],on:['d'],off:[]},{r:[43,10,1,2],on:['w'],off:[]},{r:[44,10,1,2],on:[],off:['g']}],fg:[{x:56,y:6}],
+ hint:'これまでの全部を使う。コインは必要、ジャンプは罠、「安全です」は崩れる、扇は偽物。'}
+];
+const pool=['その看板、本当に信じました？','学習しましょう。人間でしょう？','信用とは難しいものですね','私は嘘をつくとは言っていませんよ','今のは親切心だったのですが'];
+let st='title',li=0,lv,p,fk,dyn,tr,cs,dead=0,deaths=0,time=0,spots={},parts=[],msg='',mt=0,jbuf=0,coy=0,cl='',best={};
+const keys={};
+try{best=JSON.parse(localStorage.getItem('trustme')||'{}')}catch(e){}
+let unl=best.u||1,nw='';
+const JK=['Space','ArrowUp','KeyW'];
+addEventListener('keydown',e=>{if(e.repeat)return;keys[e.code]=1;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(JK.includes(e.code))jbuf=.1;onKey(e.code)});
+addEventListener('keyup',e=>keys[e.code]=0);
+[['bl','TL'],['br','TR'],['bj','TJ']].forEach(([id,k])=>{const b=document.getElementById(id);
+ b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=1;if(k==='TJ'){jbuf=.1;onKey('Enter')}});
+ ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=0))});
+cv.addEventListener('pointerdown',e=>{if(st==='play')return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;if((st==='clear'||st==='end')&&y>360&&Math.abs(x-W/2)<120){share();return}if(st==='title'){if(y>390){const i=Math.max(0,Math.min(4,Math.floor(x/160)));if(i<unl)load(WS[i]);return}}onKey('Enter')});
+const LF=()=>keys.ArrowLeft||keys.KeyA||keys.TL,RT=()=>keys.ArrowRight||keys.KeyD||keys.TR;
+const WS=[0,3,6,9,12];
+function onKey(c){
+ if(st==='title'&&(c==='Enter'||c==='Space'))load(0);
+ else if(st==='title'&&/^(Digit|Numpad)[1-5]$/.test(c)&&+c.slice(-1)<=unl)load(WS[+c.slice(-1)-1]);
+ else if((st==='clear'||st==='end')&&c==='KeyS')share();
+ else if(st==='clear'&&(c==='Enter'||c==='Space'))li+1<L.length?load(li+1):(st='end');
+ else if(st==='end'&&(c==='Enter'||c==='Space'))st='title';
+ else if(st==='play'&&c==='KeyR')reset();
+ else if(st==='play'&&c==='Escape')st='pause';
+ else if(st==='pause'&&(c==='Escape'||c==='Enter'))st='play';
+}
+function beep(f,d,ty){try{const a=beep.a||(beep.a=new AudioContext()),o=a.createOscillator(),v=a.createGain();o.type=ty||'square';o.frequency.value=f;v.gain.value=.05;o.connect(v);v.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function load(i){li=i;lv=L[i];deaths=0;time=0;spots={};st='play';reset();say('作者：'+(i==0?'ようこそ。私を信用してください。':'次のステージです。覚えたことは役に立つでしょうか？'))}
+function reset(){
+ p={x:lv.s[0]*T,y:lv.s[1]*T,w:20,h:28,vx:0,vy:0,gr:0,on:null,face:1};
+ fk=lv.fk.map(a=>({x:a[0]*T,y:a[1]*T,w:a[2]*T,h:T,s:0,t:.3,gone:0,vy:0,fk:1}));
+ dyn={};for(const k in lv.d)dyn[k]=lv.d[k].on;
+ tr=lv.tr.map(()=>0);cs=lv.c.map(()=>0);dead=0;parts=[];jbuf=0;coy=0}
+function say(s){msg=s;mt=3.5}
+const R=a=>({x:a[0]*T,y:a[1]*T,w:a[2]*T,h:a[3]*T});
+const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+function sol(){const a=lv.S.map(R);fk.forEach(f=>{if(!f.gone)a.push(f)});for(const k in lv.d){const o=lv.d[k];if(o.k==='so'&&dyn[k])a.push(R(o.r))}return a}
+function spk(){const a=[];lv.sp.forEach(s=>a.push({x:s[0]*T+4,y:s[1]*T+14,w:s[2]*T-8,h:18}));
+ for(const k in lv.d){const o=lv.d[k];if(o.k==='sp'&&dyn[k]){const r=R([...o.r]);a.push({x:r.x+4,y:r.y+(o.dn?0:14),w:r.w-8,h:18})}}return a}
+function mv(dx,dy){const S=sol();p.x+=dx;for(const r of S)if(hit(p,r)){if(dx>0)p.x=r.x-p.w;else if(dx<0)p.x=r.x+r.w}
+ p.y+=dy;p.gr=0;p.on=null;for(const r of S)if(hit(p,r)){if(dy>0){p.y=r.y-p.h;p.vy=0;p.gr=1;p.on=r}else if(dy<0){p.y=r.y+r.h;p.vy=0}}}
+function die(why){if(dead>0)return;deaths++;const k=Math.floor(p.x/160);spots[k]=(spots[k]||0)+1;let s;
+ if(spots[k]>=3)s='まだ気づかないのですか？';
+ else if(deaths>=8&&deaths%3===2)s='ヒントが欲しいのですか？「'+lv.hint+'」';
+ else if(deaths===1)s='あれ？ 予想外でしたか？';
+ else s=pool[(deaths*7)%pool.length];
+ say('作者：'+(why?why+' ':'')+s);dead=.55;beep(120,.25,'sawtooth');
+ for(let i=0;i<18;i++)parts.push({x:p.x+10,y:p.y+14,vx:(Math.random()-.5)*400,vy:-Math.random()*400})}
+function act(o){(o.on||[]).forEach(k=>dyn[k]=1);(o.off||[]).forEach(k=>dyn[k]=0)}
+function upd(dt){
+ if(mt>0)mt-=dt;
+ if(dead>0){dead-=dt;parts.forEach(q=>{q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=900*dt});if(dead<=0)reset();return}
+ time+=dt;jbuf-=dt;
+ const d=(RT()?1:0)-(LF()?1:0);p.vx=d*190;if(d)p.face=d;
+ coy=p.gr?.08:coy-dt;
+ if(jbuf>0&&coy>0){p.vy=-480;jbuf=0;coy=0;beep(520,.08)}
+ p.vy=Math.min(p.vy+1400*dt,800);
+ mv(p.vx*dt,0);mv(0,p.vy*dt);
+ if(p.x<0)p.x=0;if(p.x>lv.w*T-p.w)p.x=lv.w*T-p.w;
+ if(p.on&&p.on.fk)p.on.s=1;
+ fk.forEach(f=>{if(f.s&&!f.gone){f.t-=dt;if(f.t<=0){f.gone=1;beep(90,.2,'triangle')}}if(f.gone){f.vy+=900*dt;f.y+=f.vy*dt}});
+ if(p.y>H+60)return die('落ちました。');
+ for(const h of spk())if(hit(p,h))return die();
+ lv.tr.forEach((o,i)=>{if(!tr[i]&&hit(p,R(o.r))){tr[i]=1;act(o);beep(200,.1)}});
+ lv.c.forEach((o,i)=>{if(!cs[i]&&hit(p,{x:o.x*T+8,y:o.y*T+8,w:16,h:16})){cs[i]=1;act(o);beep(900,.1);say('作者：だから言ったのに。')}});
+ for(const f of lv.fg)if(hit(p,{x:f.x*T+4,y:f.y*T,w:24,h:64}))return die('それは偽物のゴールです。');
+ if(hit(p,{x:lv.g[0]*T+4,y:lv.g[1]*T,w:24,h:64})){st='clear';beep(660,.2);beep(880,.3);
+  const b=best[li];if(b==null||time<b){best[li]=time;try{localStorage.setItem('trustme',JSON.stringify(best))}catch(e){}cl='新記録！'}else cl='';
+  nw='';const wi=WS.filter(s=>s<=li).length-1;if(wi<4&&li===WS[wi+1]-1&&unl<wi+2){unl=wi+2;best.u=unl;nw='WORLD '+unl+' 解放！';try{localStorage.setItem('trustme',JSON.stringify(best))}catch(e){}}}
+}
+function tx(s,x,y,sz,c,al){g.font='bold '+sz+'px "Hiragino Sans","Noto Sans JP",sans-serif';g.fillStyle=c||'#f3efe6';g.textAlign=al||'left';g.fillText(s,x,y)}
+function gnd(r){g.fillStyle='#5b4636';g.fillRect(r.x,r.y,r.w,r.h);g.fillStyle='#4caf50';g.fillRect(r.x,r.y,r.w,6)}
+function spikes(x,y,w,dn){g.fillStyle='#d0d4dc';for(let i=0;i<w;i++){g.beginPath();const a=(x+i)*T;
+ if(dn){g.moveTo(a+2,y*T);g.lineTo(a+30,y*T);g.lineTo(a+16,y*T+T)}else{g.moveTo(a+2,y*T+T);g.lineTo(a+30,y*T+T);g.lineTo(a+16,y*T)}g.fill()}}
+function door(x,y){g.fillStyle='#e0a030';g.fillRect(x*T+2,y*T,28,64);g.fillStyle='#8a5a10';g.fillRect(x*T+6,y*T+4,20,56);g.fillStyle='#ffe08a';g.fillRect(x*T+21,y*T+32,4,4)}
+function share(){const text=st==='end'?'TrustMeを全ステージクリアした！ 作者を信用するか疑うか… #TrustMe':'TrustMe '+lv.n+' をクリア！ 死亡'+deaths+'回 '+time.toFixed(1)+'秒 #TrustMe',url='https://chiidu1023.github.io/chiidu-games/games/TrustMe.html';
+ const fb=()=>{try{navigator.clipboard.writeText(text+' '+url)}catch(e){}try{window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url),'_blank')}catch(e){}};
+ if(navigator.share)navigator.share({text,url}).catch(fb);else fb()}
+function shareBtn(){g.fillStyle='#1d9bf0';g.fillRect(W/2-110,365,220,42);tx('SNSで共有 (S)',W/2,393,18,'#fff','center')}
+function draw(){
+ g.fillStyle='#1d2340';g.fillRect(0,0,W,H);
+ if(st==='title'||st==='end'){tx('TrustMe',W/2,110,64,'#ffd166','center');
+  if(st==='title'){['作者を信用しなければならない。しかし作者はひねくれている。','','← → / A D：移動　Space / ↑：ジャンプ　R：リスタート　Esc：ポーズ','スマホは画面下のボタンでも操作できます','','看板は本当のこともあれば、嘘のこともある。','失敗から学んで、ゴールを目指そう。','','Enter / タップでスタート'].forEach((s,i)=>tx(s,W/2,150+i*27,17,i==8?'#ffd166':'#f3efe6','center'));for(let i=0;i<5;i++){g.fillStyle=i<unl?'#2c2a44':'#1a1930';g.fillRect(i*160+4,398,152,44);tx((i<unl?'':'🔒 ')+'WORLD '+(i+1),i*160+80,426,16,i<unl?'#ffd166':'#6a6a80','center')}if(unl<5)tx('前のワールドをクリアすると次のワールドが解放されます',W/2,388,13,'#9aa0b8','center')}
+  else{tx('全ステージクリア！',W/2,200,34,'#9be28f','center');tx('作者：……信用しすぎましたね。おめでとうございます。',W/2,250,18,'#f3efe6','center');tx('Enter / タップでタイトルへ',W/2,310,16,'#ffd166','center');shareBtn()}return}
+ const cx=Math.max(0,Math.min(p.x-W/2,lv.w*T-W));
+ g.save();g.translate(-Math.round(cx),0);
+ g.fillStyle='#2a3160';for(let i=0;i<14;i++)g.fillRect(i*260-(cx*.3%260),150+(i%3)*40,120,H);
+ lv.S.map(R).forEach(gnd);fk.forEach(f=>{if(!f.gone||f.y<H+80)gnd(f)});
+ for(const k in lv.d){const o=lv.d[k];if(!dyn[k])continue;if(o.k==='so')gnd(R(o.r));else spikes(o.r[0],o.r[1],o.r[2],o.dn)}
+ lv.sp.forEach(s=>spikes(s[0],s[1],s[2]));lv.fs.forEach(s=>spikes(s[0],s[1],s[2]));
+ lv.fg.forEach(f=>door(f.x,f.y));door(lv.g[0],lv.g[1]);
+ lv.sg.forEach(s=>{g.fillStyle='#6b4a2b';g.fillRect(s.x*T+14,s.y*T+16,4,16);g.fillStyle='#c89a5a';g.fillRect(s.x*T+2,s.y*T+2,28,18);g.fillStyle='#6b4a2b';g.fillRect(s.x*T+7,s.y*T+8,18,2);g.fillRect(s.x*T+7,s.y*T+13,12,2);
+  if(Math.abs(p.x-s.x*T)<120){const w=g.measureText(s.t).width;g.font='bold 14px sans-serif';const ww=g.measureText(s.t).width+16;g.fillStyle='rgba(0,0,0,.75)';g.fillRect(s.x*T+16-ww/2,s.y*T-30,ww,24);tx(s.t,s.x*T+16,s.y*T-13,14,'#fff','center')}});
+ lv.c.forEach((o,i)=>{if(!cs[i]){g.fillStyle='#ffd166';g.beginPath();g.arc(o.x*T+16,o.y*T+16,8,0,7);g.fill()}});
+ if(dead<=0){g.fillStyle='#ffd166';g.fillRect(p.x,p.y,p.w,p.h);g.fillStyle='#222';g.fillRect(p.x+(p.face>0?12:4),p.y+7,4,5)}
+ else{g.fillStyle='#ffd166';parts.forEach(q=>g.fillRect(q.x,q.y,6,6))}
+ g.restore();
+ tx('WORLD '+lv.n,12,24,16);tx('死亡 '+deaths+'　時間 '+time.toFixed(1)+'s',W-12,24,16,'#f3efe6','right');
+ if(mt>0){g.fillStyle='rgba(0,0,0,.8)';g.fillRect(20,H-64,W-40,48);tx(msg.length>46?msg.slice(0,46)+'…':msg,W/2,H-34,17,'#ffd166','center')}
+ if(st==='pause'){g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,0,W,H);tx('ポーズ中',W/2,210,40,'#fff','center');tx('Esc / Enter で再開',W/2,250,16,'#ffd166','center')}
+ if(st==='clear'){g.fillStyle='rgba(0,0,0,.75)';g.fillRect(0,0,W,H);tx('STAGE CLEAR!',W/2,150,44,'#9be28f','center');
+  tx('クリア時間 '+time.toFixed(2)+'s　死亡 '+deaths+'回　'+cl,W/2,205,20,'#fff','center');
+  tx('作者：'+(deaths==0?'ノーミス……？ 信じられません。':deaths<5?'まあ、順当でしょう。':'お疲れさまでした。学びましたね？'),W/2,245,17,'#ffd166','center');tx('Enter / タップで次へ',W/2,300,16,'#fff','center');if(nw)tx(nw,W/2,345,24,'#9be28f','center');shareBtn()}
+}
+if(/^#[1-5]$/.test(location.hash))load(WS[+location.hash[1]-1]);
+let last=performance.now();
+(function loop(n){const dt=Math.min((n-last)/1000,.033);last=n;if(st==='play')upd(dt);draw();requestAnimationFrame(loop)})(last);
+</script></body></html>

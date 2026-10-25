@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DEMON CORE — 限界の隙間</title>
+<style>
+:root{color-scheme:dark;--bg:#050a07;--pn:#0d1a12;--ln:#3b5a46;--tx:#b8f0c8;--dim:#6f9a7d;--am:#ffb43a;--rd:#ff3b3b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font-family:"Yu Gothic","Meiryo","Hiragino Sans",monospace,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px}
+.w{width:min(100vw - 12px,(100vh - 130px)*16/9)}
+#hud{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.cell{background:var(--pn);border:1px solid var(--ln);padding:3px 6px;font-size:clamp(10px,1.2vw,14px)}
+.cell b{display:block;font:bold clamp(13px,1.8vw,22px) "Courier New",monospace;color:var(--am)}
+#stage{position:relative;aspect-ratio:16/9;border:2px solid var(--ln);background:#000}
+canvas{width:100%;height:100%;display:block}
+.screen{position:absolute;inset:0;background:rgba(3,10,6,.93);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:14px;text-align:center;overflow:auto;font-size:clamp(12px,1.5vw,17px);line-height:1.6}
+.screen.on{display:flex}
+h1{margin:0;font:bold clamp(28px,6vw,64px) "Courier New",monospace;letter-spacing:.12em;color:var(--tx);text-shadow:0 0 14px #2f9;line-height:1.1}
+h2{margin:0;font-size:clamp(18px,2.6vw,30px);color:var(--am)}
+.sub{font:clamp(12px,2vw,22px) "Courier New",monospace;letter-spacing:.3em;color:var(--dim)}
+button{font:inherit;color:var(--tx);background:#12301e;border:1px solid var(--tx);padding:7px 20px;cursor:pointer;min-width:150px}
+button:hover{background:#1d4d30}button.d{border-color:var(--rd);color:#ffd0d0;background:#3a1212}
+button.sel{background:var(--tx);color:#031}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#bar{display:flex;gap:8px;justify-content:center}
+#bar button{min-width:0;padding:5px 14px;font-size:clamp(11px,1.3vw,15px)}
+.txt{max-width:640px;text-align:left}.small{font-size:.8em;color:var(--dim)}
+#res.fail h2{color:var(--rd)}
+</style></head><body>
+<div id="app">
+<div id="hud" class="w">
+<div class="cell">スコア<b id="hS">0</b></div><div class="cell">最高スコア<b id="hB">0</b></div>
+<div class="cell">成功回数<b id="hO">0</b></div><div class="cell">危険度<b id="hD">0</b></div>
+<div class="cell">評価ランク<b id="hR">D</b></div><div class="cell">経過時間<b id="hT">0.0s</b></div>
+</div>
+<div id="stage" class="w">
+<canvas id="cv" width="960" height="540"></canvas>
+
+<div id="title" class="screen on">
+<div class="sub">1950s RESEARCH FACILITY</div>
+<h1>DEMON CORE</h1><div class="sub">LIMIT OF THE GAP</div>
+<div class="row" style="flex-direction:column;align-items:center;margin-top:6px">
+<button id="bStart">実験開始</button><button id="bHow">遊び方</button><button id="bRec">記録</button><button id="bSet">設定</button></div>
+<div class="small">※架空の実験を題材にしたフィクションです。数値や判定はすべてゲーム独自のもので、現実の物理を再現するものではありません。</div>
+</div>
+
+<div id="how" class="screen"><h2>遊び方</h2>
+<div class="txt">
+・クリックまたはSpaceキーでドライバーを押し込むと、隙間が少しずつ狭まっていきます。長押しすると一定の間隔で繰り返します。<br>
+・隙間が狭まるほど危険度（0〜100）が上がり、高いほど得点倍率が増えます。<br>
+・危険度60以上で倍率×2、80以上で×4、95以上で×8。得点は時間経過でも加算されます。<br>
+・危険度は操作しないとゆっくり下がります。計器の「揺らぎ」が<b>安定</b>のときに操作すると上昇が小さく、<b>不安定</b>のときは大きく上がります。<br>
+・「実験を終了する」で得点が確定し、危険度が高いほど高いランク（D〜S）と最終ボーナスを獲得します。<br>
+・危険度100で実験事故。得点の半分を失い、「実験失敗」になります。<br>
+・ESCキーでポーズ。ランダムイベントには演出のみのものと、危険度が実際に変わるもの（メッセージに【危険度変動】と表示）があります。</div>
+<button class="back">戻る</button></div>
+
+<div id="rec" class="screen"><h2>記録</h2><div id="recT" class="txt"></div><button class="back">戻る</button></div>
+
+<div id="set" class="screen"><h2>設定</h2>
+<div>難易度</div>
+<div class="row"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
+<div class="small" id="dDesc"></div>
+<div>音量 <input type="range" id="vol" min="0" max="100"></div>
+<label><input type="checkbox" id="mute"> ミュート</label>
+<button class="back">戻る</button></div>
+
+<div id="pause" class="screen"><h2>ポーズ中</h2>
+<div class="row"><button id="pRes">再開</button><button id="pRet">リトライ</button><button id="pTit" class="d">タイトルへ</button></div></div>
+
+<div id="res" class="screen"><h2 id="rH"></h2><div id="rT"></div>
+<div class="row"><button id="rRet">リトライ</button><button id="rTit">タイトルに戻る</button></div>
+<div class="row"><button id="shX">𝕏で結果を共有</button><button id="shCp">結果をコピー</button></div><div class="small" id="shMsg"></div></div>
+</div>
+<div id="bar" class="w"><button id="bEnd">実験を終了する</button><button id="bPause">ポーズ (ESC)</button><button id="bMute">音: ON</button></div>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const DIFF={easy:{inc:.7,sc:.8,rnd:.5,d:"危険度が上がりにくい初心者向け"},normal:{inc:1,sc:1,rnd:1,d:"標準的な難易度"},hard:{inc:1.3,sc:1.7,rnd:1.9,d:"変動が大きい上級者向け・得点倍率大"}};
+const KEY="demoncore_save_v1";
+let S={best:0,ok:0,acc:0,maxD:0,diff:"normal",vol:.6,mute:false,rank:{easy:[],normal:[],hard:[]}};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
+let shareTxt="";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function addRank(sc,ok){
+  if(!S.rank)S.rank={};const a=S.rank[S.diff]=S.rank[S.diff]||[];
+  if(sc<=0)return 0;
+  const e={s:sc,ok:ok,r:Math.floor(runMax)};a.push(e);a.sort((x,y)=>y.s-x.s);a.length=Math.min(a.length,5);save();
+  return a.indexOf(e)+1;
+}
+function rankTxt(p){return p?"<br>★ "+S.diff.toUpperCase()+" ランキング "+p+"位！":""}
+
+/* ---------- audio ---------- */
+let AC=null,master,droneG;
+function initAudio(){
+  if(AC){if(AC.state==="suspended")AC.resume();return}
+  try{
+    AC=new(window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain();master.connect(AC.destination);applyVol();
+    const o=AC.createOscillator(),f=AC.createBiquadFilter();droneG=AC.createGain();
+    o.type="sawtooth";o.frequency.value=46;f.type="lowpass";f.frequency.value=150;droneG.gain.value=0;
+    o.connect(f);f.connect(droneG);droneG.connect(master);o.start();
+  }catch(e){AC=null}
+}
+function applyVol(){if(master)master.gain.value=S.mute?0:S.vol;$("bMute").textContent=S.mute?"音: OFF":"音: ON"}
+function tone(f,d,type,v,sl){
+  if(!AC)return;try{
+  const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);
+  if(sl)o.frequency.exponentialRampToValueAtTime(Math.max(20,f+sl),t+d);
+  g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+  o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03);}catch(e){}
+}
+function noise(d,v){
+  if(!AC)return;try{
+  const n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);
+  for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);
+  const s=AC.createBufferSource(),g=AC.createGain();g.gain.value=v;s.buffer=b;s.connect(g);g.connect(master);s.start();}catch(e){}
+}
+const clink=()=>{tone(1800+Math.random()*900,.12,"triangle",.14,-500);noise(.04,.08)};
+const alarm=d=>tone(700+d*4,.12,"square",.1);
+
+/* ---------- state ---------- */
+let mode="title",danger=0,dispD=0,gap=1,score=0,time=0,runMax=0,lastAct=0,kick=0,flash=0,shake=0;
+let evT=4,evMsg="",evMsgT=0,lamp=0,glitch=0,flick=0,noiseEv=0,alarmT=0,holdTimer=null,accTimer=null,sway=0;
+const cv=$("cv"),ctx=cv.getContext("2d");
+
+function mult(d){return d>=95?8:d>=80?4:d>=60?2:1}
+function rank(d){return d>=95?"S":d>=80?"A":d>=60?"B":d>=40?"C":"D"}
+function show(id){document.querySelectorAll(".screen").forEach(e=>e.classList.remove("on"));if(id)$(id).classList.add("on")}
+
+function startGame(){
+  clearTimeout(accTimer);stopHold();
+  danger=0;dispD=0;gap=1;score=0;time=0;runMax=0;kick=0;flash=0;shake=0;evT=3+Math.random()*3;
+  evMsg="";evMsgT=0;lamp=0;glitch=0;flick=0;noiseEv=0;alarmT=0;
+  mode="play";show(null);initAudio();
+}
+function toTitle(){clearTimeout(accTimer);stopHold();mode="title";show("title")}
+function msg(t,s){evMsg=t;evMsgT=s||3}
+
+function act(){
+  if(mode!=="play")return;
+  const n=performance.now();if(n-lastAct<150)return;lastAct=n;
+  const d=DIFF[S.diff];
+  let inc=(2.2+Math.random()*3.6)*d.inc;
+  inc*=Math.sin(sway)<0?.7:1.2;                    // タイミング要素
+  inc*=1+(Math.random()-.5)*.6*d.rnd;
+  danger+=inc;kick=1;clink();
+  score+=Math.round(10*mult(danger)*d.sc*(1+inc/4));
+  runMax=Math.max(runMax,Math.min(100,danger));
+  if(danger>=100)accident();
+}
+function startHold(){stopHold();act();holdTimer=setInterval(act,220)}
+function stopHold(){if(holdTimer){clearInterval(holdTimer);holdTimer=null}}
+
+function finish(){
+  if(mode!=="play")return;
+  mode="over";stopHold();
+  const fin=Math.round(score*(1+danger/100)),r=rank(danger);
+  S.ok++;S.best=Math.max(S.best,fin);S.maxD=Math.max(S.maxD,Math.floor(runMax));save();score=fin;const pos=addRank(fin,true);shareTxt="DEMON CORE — 限界の隙間 ["+S.diff.toUpperCase()+"] 実験成功 ランク"+r+" / スコア"+fin+" / 危険度"+Math.floor(danger);$("shMsg").textContent="";
+  tone(523,.25,"triangle",.2);setTimeout(()=>tone(659,.25,"triangle",.2),150);setTimeout(()=>tone(784,.5,"triangle",.2),300);
+  $("res").classList.remove("fail");$("rH").textContent="実験成功 — ランク "+r;
+  $("rT").innerHTML="最終スコア："+fin+"（終了ボーナス込み）<br>終了時の危険度："+Math.floor(danger)+"<br>最高到達危険度："+Math.floor(runMax)+rankTxt(pos);
+  show("res");
+}
+function accident(){
+  mode="over";stopHold();danger=100;runMax=100;flash=1;shake=1;
+  const fin=Math.floor(score/2);score=fin;
+  S.acc++;S.best=Math.max(S.best,fin);S.maxD=100;save();const pos=addRank(fin,false);shareTxt="DEMON CORE — 限界の隙間 ["+S.diff.toUpperCase()+"] 実験事故発生… 実験失敗 / スコア"+fin+" / 危険度100";$("shMsg").textContent="";
+  for(let i=0;i<6;i++)setTimeout(()=>tone(500+i*160,.25,"sawtooth",.25,500),i*120);
+  noise(1.2,.5);tone(90,1.5,"sawtooth",.3,-60);
+  accTimer=setTimeout(()=>{
+    $("res").classList.add("fail");$("rH").textContent="実験事故発生 — GAME OVER";
+    $("rT").innerHTML="実験失敗（得点の半分を失いました）<br>最終スコア："+fin+"<br>今回の最高到達危険度：100"+rankTxt(pos);show("res");
+  },1600);
+}
+
+function pauseGame(){if(mode==="play"){mode="pause";stopHold();show("pause")}}
+function resume(){if(mode==="pause"){mode="play";show(null)}}
+
+/* ---------- update ---------- */
+function update(dt){
+  const d=DIFF[S.diff];
+  time+=dt;sway+=dt*3.1;
+  danger=Math.max(0,danger-.7*dt);
+  if(danger>=60)score+=dt*mult(danger)*5*d.sc;
+  gap+=((1-Math.min(100,danger)/100)-gap)*Math.min(1,dt*6);
+  evT-=dt;
+  if(evT<=0){evT=3+Math.random()*(6/d.rnd+1);randomEvent()}
+  if(danger>=60){alarmT-=dt;if(alarmT<=0){alarm(danger);alarmT=.9-(Math.min(danger,100)-60)/40*.75}}
+  if(droneG)droneG.gain.setTargetAtTime(danger>=60?(danger-40)/60*.3:.05,AC.currentTime,.2);
+}
+function randomEvent(){
+  const r=Math.random();
+  if(r<.15){lamp=1.5;msg("警告ランプが点滅")}
+  else if(r<.3){glitch=1;msg("計器の針が乱れた（表示のみ）")}
+  else if(r<.45){flick=1.2;msg("研究室の照明がちらつく")}
+  else if(r<.6){noiseEv=1.5;msg("通信ノイズ発生")}
+  else if(r<.7){tone(300,.4,"sawtooth",.12,-120);msg("不明な警告音")}
+  else if(r<.85){const v=2+Math.random()*3*DIFF[S.diff].rnd;danger+=v;kick=1;msg("【危険度変動】装置が振動：危険度 +"+v.toFixed(1),3.5);if(danger>=100)accident()}
+  else if(danger>10){const v=2+Math.random()*3;danger=Math.max(0,danger-v);msg("【危険度変動】冷却装置作動：危険度 −"+v.toFixed(1),3.5)}
+}
+
+/* ---------- draw ---------- */
+const zoneCol=d=>d>=95?"#ff2b2b":d>=80?"#ff8a2b":d>=60?"#ffd23a":d>=40?"#a6e04a":"#3fe07a";
+function metal(cx,cy,r){const g=ctx.createRadialGradient(cx-r*.4,cy-r*.5,r*.1,cx,cy,r*1.1);g.addColorStop(0,"#d5dbd6");g.addColorStop(.5,"#7d8a82");g.addColorStop(1,"#1c2420");return g}
+function draw(t){
+  const W=960,H=540;ctx.save();
+  let sh=(dispD>=80?(dispD-70)/30*5:0)+shake*14;
+  ctx.translate((Math.random()-.5)*sh,(Math.random()-.5)*sh);
+  let bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#0a1a10");bg.addColorStop(1,"#020503");
+  ctx.fillStyle=bg;ctx.fillRect(-20,-20,W+40,H+40);
+  ctx.strokeStyle="rgba(60,110,75,.12)";ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // 装置
+  const cx=330,cy=290,R=170,g=8+gap*50,col=zoneCol(dispD);
+  ctx.fillStyle="#1a1f1c";ctx.fillRect(cx-60,cy+R-10,120,70);ctx.fillRect(cx-130,cy+R+50,260,16);
+  ctx.save();ctx.shadowColor=col;ctx.shadowBlur=20+gap*50;ctx.fillStyle=col;
+  ctx.fillRect(cx-R+6,cy-g/2,2*R-12,g);ctx.restore();
+  ctx.fillStyle=metal(cx,cy,R);
+  ctx.beginPath();ctx.arc(cx,cy+g/2,R,0,Math.PI);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy-g/2,R,Math.PI,2*Math.PI);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,.4)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy+g/2,R,0,Math.PI);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy-g/2,R,Math.PI,2*Math.PI);ctx.stroke();
+  // ドライバー
+  const j=dispD>=60?Math.sin(t*50)*(dispD-55)/45*2:0,k=kick*10;
+  ctx.save();ctx.translate(-k+j,0);ctx.lineCap="round";
+  ctx.strokeStyle="#aab3ad";ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(cx+30,cy);ctx.lineTo(cx+R+90,cy-26);ctx.stroke();
+  ctx.strokeStyle="#e8a33a";ctx.lineWidth=26;ctx.beginPath();ctx.moveTo(cx+R+90,cy-26);ctx.lineTo(cx+R+190,cy-42);ctx.stroke();
+  ctx.fillStyle="#d8dcd9";ctx.beginPath();ctx.moveTo(cx+R-40,cy-3);ctx.lineTo(cx+30,cy-g/2+1);ctx.lineTo(cx+30,cy+g/2-1);ctx.closePath();ctx.fill();
+  ctx.restore();
+  // メーター
+  const mx=790,my=270,mr=125;
+  ctx.fillStyle="#0b1510";ctx.strokeStyle="#3b5a46";ctx.lineWidth=4;ctx.beginPath();ctx.arc(mx,my,mr+16,0,7);ctx.fill();ctx.stroke();
+  const a0=Math.PI*.75,span=Math.PI*1.5,zones=[[0,40,"#3fe07a"],[40,60,"#a6e04a"],[60,80,"#ffd23a"],[80,95,"#ff8a2b"],[95,100,"#ff2b2b"]];
+  ctx.lineWidth=10;zones.forEach(z=>{ctx.strokeStyle=z[2];ctx.beginPath();ctx.arc(mx,my,mr-8,a0+z[0]/100*span,a0+z[1]/100*span);ctx.stroke()});
+  ctx.strokeStyle="#cfe";ctx.lineWidth=2;ctx.fillStyle="#cfe";ctx.font="12px monospace";ctx.textAlign="center";
+  for(let v=0;v<=100;v+=10){const a=a0+v/100*span,c=Math.cos(a),s=Math.sin(a);ctx.beginPath();ctx.moveTo(mx+c*(mr-24),my+s*(mr-24));ctx.lineTo(mx+c*(mr-34),my+s*(mr-34));ctx.stroke();ctx.fillText(v,mx+c*(mr-48),my+s*(mr-48)+4)}
+  let na=a0+Math.min(100,dispD)/100*span;
+  na+=(dispD>=60?Math.sin(t*45)*dispD/100*.05:0)+(glitch>0?Math.sin(t*60)*.5*glitch:0);
+  ctx.strokeStyle="#ff5a3a";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(mx+Math.cos(na)*(mr-18),my+Math.sin(na)*(mr-18));ctx.stroke();
+  ctx.fillStyle="#222";ctx.beginPath();ctx.arc(mx,my,9,0,7);ctx.fill();
+  ctx.fillStyle=col;ctx.font="bold 26px 'Courier New',monospace";ctx.fillText(dispD.toFixed(1),mx,my+60);
+  ctx.fillStyle="#6f9a7d";ctx.font="13px sans-serif";ctx.fillText("危険度（架空値）",mx,my+80);
+  // ランプ
+  const bl=Math.sin(t*(dispD>=80?24:10))>0;
+  [[40,"#ffb43a",1],[60,"#ff3b3b",bl],[80,"#ff3b3b",bl&&dispD>=80]].forEach((l,i)=>{
+    const on=(dispD>=l[0]&&l[2])||(lamp>0&&bl);ctx.fillStyle=on?l[1]:"#2a2f2c";
+    ctx.save();if(on){ctx.shadowColor=l[1];ctx.shadowBlur=18}ctx.beginPath();ctx.arc(715+i*75,95,13,0,7);ctx.fill();ctx.restore()});
+  // 揺らぎ
+  const calm=Math.sin(sway)<0;ctx.font="14px sans-serif";ctx.fillStyle=calm?"#3fe07a":"#ff8a2b";ctx.textAlign="left";
+  ctx.fillText("揺らぎ："+(calm?"安定（今が好機）":"不安定"),620,445);
+  // メッセージ
+  ctx.textAlign="center";ctx.font="bold 18px 'Yu Gothic',sans-serif";
+  const band=dispD>=95?"限界領域 — 終了を推奨":dispD>=80?"極めて危険！":dispD>=60?"危険：警報作動中":dispD>=40?"注意：警告ランプ点灯":"状態：安定。慎重に進行中";
+  ctx.fillStyle=evMsgT>0?"#ffe27a":col;ctx.fillText(evMsgT>0?evMsg:band,480,515);
+  // 演出
+  if(noiseEv>0||dispD>=60){const n=(dispD>=60?dispD/3:0)+(noiseEv>0?60:0);ctx.fillStyle="rgba(200,255,210,.25)";for(let i=0;i<n;i++)ctx.fillRect(Math.random()*W,Math.random()*H,Math.random()*30,1)}
+  ctx.fillStyle="rgba(0,0,0,.12)";for(let y=0;y<H;y+=3)ctx.fillRect(0,y,W,1);
+  if(flick>0&&Math.random()<.5){ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(0,0,W,H)}
+  if(dispD>=95||mode==="over"&&danger>=100){ctx.fillStyle="rgba(255,0,0,"+(.12+.12*Math.sin(t*14))+")";ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="#ff4040";ctx.font="bold 34px 'Courier New',monospace";ctx.textAlign="center";ctx.fillText("▲ WARNING ▲",cx,70)}
+  if(flash>0){ctx.fillStyle="rgba(255,255,255,"+Math.min(1,flash)+")";ctx.fillRect(0,0,W,H)}
+  ctx.restore();
+}
+
+/* ---------- main loop ---------- */
+let prev=performance.now();
+function loop(n){
+  const dt=Math.min(.05,(n-prev)/1000);prev=n;const t=n/1000;
+  if(mode==="play")update(dt);
+  dispD+=(danger-dispD)*Math.min(1,dt*8);
+  kick=Math.max(0,kick-dt*6);flash=Math.max(0,flash-dt*1.8);shake=Math.max(0,shake-dt*.7);
+  evMsgT=Math.max(0,evMsgT-dt);lamp=Math.max(0,lamp-dt);glitch=Math.max(0,glitch-dt);flick=Math.max(0,flick-dt);noiseEv=Math.max(0,noiseEv-dt);
+  draw(t);
+  $("hS").textContent=Math.floor(score);$("hB").textContent=Math.max(S.best,0);$("hO").textContent=S.ok;
+  $("hD").textContent=Math.min(100,danger).toFixed(1);$("hR").textContent=rank(danger);$("hT").textContent=time.toFixed(1)+"s";
+  requestAnimationFrame(loop);
+}
+
+/* ---------- UI wiring ---------- */
+$("bStart").onclick=startGame;
+$("bHow").onclick=()=>show("how");
+$("bRec").onclick=()=>{
+  let h="最高スコア："+S.best+"　成功："+S.ok+"回　事故："+S.acc+"回　最高到達危険度："+S.maxD+"<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;text-align:left'>";
+  ["easy","normal","hard"].forEach(m=>{
+    const a=(S.rank&&S.rank[m])||[];
+    h+="<div><b style='color:var(--am)'>"+m.toUpperCase()+" ランキング</b><br>";
+    if(!a.length)h+="<span class='small'>記録なし</span>";
+    a.forEach((e,i)=>{h+=(i+1)+"位 "+e.s+" <span class='small'>"+(e.ok?"成功":"失敗")+" 危険度"+e.r+"</span><br>"});
+    h+="</div>";
+  });
+  $("recT").style.maxWidth="900px";$("recT").innerHTML=h+"</div>";show("rec");
+};
+$("bSet").onclick=()=>{refreshSet();show("set")};
+document.querySelectorAll(".back").forEach(b=>b.onclick=()=>show("title"));
+function refreshSet(){document.querySelectorAll("[data-d]").forEach(b=>b.classList.toggle("sel",b.dataset.d===S.diff));$("dDesc").textContent=DIFF[S.diff].d;$("vol").value=Math.round(S.vol*100);$("mute").checked=S.mute}
+document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{S.diff=b.dataset.d;save();refreshSet()});
+$("vol").oninput=e=>{S.vol=e.target.value/100;save();applyVol()};
+$("mute").onchange=e=>{S.mute=e.target.checked;save();applyVol()};
+$("bMute").onclick=e=>{S.mute=!S.mute;save();applyVol();e.target.blur()};
+$("bEnd").onclick=e=>{finish();e.target.blur()};
+$("bPause").onclick=e=>{pauseGame();e.target.blur()};
+$("pRes").onclick=resume;$("pRet").onclick=startGame;$("pTit").onclick=toTitle;
+$("rRet").onclick=startGame;$("rTit").onclick=toTitle;
+function shareUrl(){return "https://chiidu1023.github.io/chiidu-games/games/DEMON%20CORE%20%E2%80%94%20%E9%99%90%E7%95%8C%E3%81%AE%E9%9A%99%E9%96%93.html"}
+function copyFallback(t,ok,ng){try{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();const r=document.execCommand("copy");a.remove();r?ok():ng()}catch(e){ng()}}
+$("shX").onclick=()=>{
+  const u="https://twitter.com/intent/tweet?text="+encodeURIComponent(shareTxt+"\n#DEMONCORE")+"&url="+encodeURIComponent(shareUrl());
+  window.open(u,"_blank","noopener");
+};
+$("shCp").onclick=()=>{
+  const t=shareTxt+" #DEMONCORE "+shareUrl();
+  const ok=()=>{$("shMsg").textContent="コピーしました。SNSに貼り付けてください"},ng=()=>{$("shMsg").textContent="コピーできませんでした"};
+  try{navigator.clipboard.writeText(t).then(ok,()=>copyFallback(t,ok,ng))}catch(e){copyFallback(t,ok,ng)}
+};
+cv.addEventListener("mousedown",e=>{if(e.button===0){initAudio();if(mode==="play")startHold()}});
+window.addEventListener("mouseup",stopHold);
+cv.addEventListener("mouseleave",stopHold);
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"&&mode==="play"){e.preventDefault();if(!e.repeat){initAudio();startHold()}}
+  else if(e.code==="Escape"){e.preventDefault();mode==="play"?pauseGame():resume()}
+});
+window.addEventListener("keyup",e=>{if(e.code==="Space"){if(mode==="play")e.preventDefault();stopHold()}});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)pauseGame()});
+window.addEventListener("blur",stopHold);
+document.addEventListener("pointerdown",()=>{if(AC&&AC.state==="suspended")AC.resume()});
+refreshSet();applyVol();requestAnimationFrame(loop);
+</script></body></html>

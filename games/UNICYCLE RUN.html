@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UNICYCLE RUN</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#1d2433;--panel:rgba(255,255,255,.92);--acc:#e8505b;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131c;--fg:#eef1f8;--panel:rgba(24,28,40,.92)}}
+:root[data-theme="dark"]{--bg:#10131c;--fg:#eef1f8;--panel:rgba(24,28,40,.92)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 0;pointer-events:none}
+#stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.st{background:var(--panel);border-radius:10px;padding:4px 10px;min-width:74px;text-align:center;font-size:11px;opacity:.9}
+.st b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+#gw{max-width:420px;margin:8px auto 0;position:relative;height:14px;border-radius:7px;background:linear-gradient(90deg,#e0443a,#f0b429 25%,#3fb95a 42%,#3fb95a 58%,#f0b429 75%,#e0443a);border:2px solid var(--panel)}
+#gm{position:absolute;top:-4px;width:6px;height:20px;margin-left:-3px;background:#fff;border:2px solid #111;border-radius:3px;left:50%}
+#gl{text-align:center;font-size:10px;opacity:.8;margin-top:2px}
+#toast{position:fixed;z-index:10;left:0;right:0;top:30%;text-align:center;font-size:28px;font-weight:800;color:#fff;text-shadow:0 2px 6px #000a;opacity:0;transition:opacity .3s;pointer-events:none}
+#ov,#rov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);padding:16px}
+#box,#rbx{background:var(--panel);border-radius:18px;padding:22px 26px;max-width:440px;text-align:center;line-height:1.6}
+#box.over .hlp{display:none}
+.sub{margin:10px 0 0 8px;background:transparent;color:var(--fg);border:2px solid #8886;border-radius:12px;padding:10px 18px;font-size:15px}
+#rbx{max-height:92%;overflow:auto;min-width:min(340px,92vw)}
+#rbx h1{margin:0 0 8px;font-size:24px}
+#rt{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+#rt th{font-size:11px;opacity:.7;font-weight:600;padding:2px 6px}
+#rt td{padding:5px 6px;border-top:1px solid #8883}
+#rt tr.me td{background:rgba(232,80,91,.25);font-weight:700}
+#rt tr.top td:first-child::before{content:"🥇"}
+#box h1{margin:0 0 6px;font-size:28px;letter-spacing:2px}
+#box p{margin:6px 0;font-size:14px}
+kbd{background:var(--bg);border:1px solid #8886;border-radius:4px;padding:1px 6px;font-size:12px}
+button{font:inherit;cursor:pointer}
+#go{margin-top:10px;background:var(--acc);color:#fff;border:0;border-radius:12px;padding:12px 34px;font-size:18px;font-weight:700}
+#pad{position:fixed;left:0;right:0;bottom:0;display:none;justify-content:space-between;padding:0 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
+#pad.on{display:flex}
+#pad div{display:flex;gap:10px;align-items:flex-end}
+#pad button{width:64px;height:64px;border-radius:50%;border:0;background:var(--panel);color:var(--fg);font-size:22px;opacity:.85;touch-action:none}
+#pad button.j{width:84px;height:84px;background:var(--acc);color:#fff;font-size:15px;font-weight:700}
+#pad button.on{transform:scale(.92);opacity:1}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="stats">
+    <div class="st">距離<b id="sd">0m</b></div>
+    <div class="st">最高記録<b id="sb">0m</b></div>
+    <div class="st">速度<b id="ss">0</b></div>
+    <div class="st">時間<b id="st">0.0s</b></div>
+  </div>
+  <div id="gw"><div id="gm"></div></div>
+  <div id="gl">◀ 後ろに傾く　バランス　前に傾く ▶</div>
+</div>
+<div id="toast"></div>
+<div id="pad">
+  <div><button data-k="ArrowLeft">◀</button><button data-k="ArrowRight">▶</button></div>
+  <div><button data-k="ArrowDown">▼</button><button data-k="ArrowUp">▲</button><button class="j" data-k="Space">JUMP</button></div>
+</div>
+<div id="ov"><div id="box">
+  <h1 id="ot">UNICYCLE RUN</h1>
+  <p id="om">一輪車でバランスを取りながら、できるだけ遠くへ！</p>
+  <p class="hlp"><kbd>→</kbd>/<kbd>D</kbd> 前に傾く　<kbd>←</kbd>/<kbd>A</kbd> 後ろに傾く<br><kbd>↑</kbd>/<kbd>W</kbd> 加速　<kbd>↓</kbd>/<kbd>S</kbd> 減速<br><kbd>Space</kbd> ジャンプ　<kbd>R</kbd> リスタート</p>
+  <p class="hlp" style="font-size:12px;opacity:.8">傾いた側へ体を傾け返すと立て直せます。穴の前ではジャンプ！</p>
+  <button id="go">スタート</button>
+  <button id="rb" class="sub">🏆 記録を見る</button>
+  <button id="mb" class="sub" style="display:none">メニューへ</button>
+  <div id="sh" style="display:none;margin-top:6px"><p style="margin:8px 0 0;font-size:12px;opacity:.8">結果をシェア</p><button id="shn" class="sub" style="display:none">共有…</button><button id="shx" class="sub">𝕏</button><button id="shl" class="sub">LINE</button><button id="shc" class="sub">コピー</button></div>
+</div></div>
+<div id="rov" style="display:none"><div id="rbx">
+  <h1>🏆 ベスト記録 TOP10</h1>
+  <div id="rl"></div>
+  <p id="rs" style="font-size:12px;opacity:.8"></p>
+  <button id="rbk" class="sub" style="margin-left:0">もどる</button>
+</div></div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById("c"),ctx=cv.getContext("2d");
+var $=function(i){return document.getElementById(i)};
+var H=540,W=960,sc=1,dpr=1;
+function resize(){dpr=Math.min(2,window.devicePixelRatio||1);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;sc=innerHeight/H;W=innerWidth/sc}
+addEventListener("resize",resize);resize();
+
+/* storage */
+var best=0;
+try{best=parseFloat(localStorage.getItem("unicycle_best"))||0}catch(e){}
+function saveBest(){try{localStorage.setItem("unicycle_best",String(best))}catch(e){}}
+var hist=[],plays=0,lastRank=0;
+try{hist=JSON.parse(localStorage.getItem("unicycle_hist")||"[]");if(!Array.isArray(hist))hist=[];plays=parseInt(localStorage.getItem("unicycle_plays"))||0}catch(e){hist=[]}
+if(hist.length&&hist[0].d>best)best=hist[0].d;
+function addRec(){
+  plays++;lastRank=0;
+  var r={d:Math.round(dist*10)/10,t:Math.round(tm*10)/10,dt:Date.now()};
+  if(r.d>=1){hist.push(r);hist.sort(function(p,q){return q.d-p.d});hist=hist.slice(0,10);lastRank=hist.indexOf(r)+1}
+  try{localStorage.setItem("unicycle_hist",JSON.stringify(hist));localStorage.setItem("unicycle_plays",String(plays))}catch(e){}
+}
+function rovOpen(){return $("rov").style.display==="flex"}
+function openRec(){
+  var h="<table id='rt'><tr><th>順位</th><th>距離</th><th>時間</th><th>日付</th></tr>";
+  if(!hist.length)h+="<tr><td colspan='4'>まだ記録がありません</td></tr>";
+  hist.forEach(function(r,i){var c=(i+1===lastRank&&state==="over")?"me":(i===0?"top":"");h+="<tr class='"+c+"'><td>"+(i+1)+"</td><td>"+r.d.toFixed(1)+"m</td><td>"+r.t.toFixed(1)+"s</td><td>"+new Date(r.dt).toLocaleDateString()+"</td></tr>"});
+  $("rl").innerHTML=h+"</table>";
+  $("rs").textContent="プレイ回数 "+plays+"回　最高記録 "+best.toFixed(1)+"m";
+  $("ov").style.display="none";$("rov").style.display="flex";
+}
+function closeRec(){$("rov").style.display="none";$("ov").style.display="flex"}
+
+/* sound */
+var ac;
+function snd(f,d,type,vol,sl){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.type=type||"square";o.frequency.setValueAtTime(f,t);if(sl)o.frequency.linearRampToValueAtTime(Math.max(30,f+sl),t+d);g.gain.setValueAtTime(vol||.07,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}}
+
+/* terrain */
+var S=16,BASE=420,R=22,GR=1700,T=[],OB=[],CW=[],lastOb=-1e9,cl=BASE;
+function pu(y){T.push(y)}
+function flat(n){for(var i=0;i<n;i++)pu(cl)}
+function slope(dy,n){if(cl+dy<BASE-140||cl+dy>BASE+60)dy=-dy;var a=cl;for(var i=1;i<=n;i++){var u=i/n;pu(a+dy*u*u*(3-2*u))}cl=a+dy}
+function hole(n){for(var i=0;i<n;i++)pu(null)}
+function chunk(){
+  var d=Math.min(1,(T.length*S/40)/900),r=Math.random();
+  if(r<.2)flat(8+Math.random()*10|0);
+  else if(r<.45)slope((Math.random()<.5?-1:1)*(30+Math.random()*60*(.5+d)),12+Math.random()*10|0);
+  else if(r<.62){var k=2+Math.random()*3|0,am=8+d*12;for(var j=0;j<k;j++){slope(-am,5);slope(am,5)}}
+  else if(r<.72&&d>.05){slope((Math.random()<.5?-1:1)*(10+Math.random()*15),3);flat(5)}
+  else if(r<.88&&d>.1){flat(7);hole(5+Math.random()*(2+d*4)|0);flat(8)}
+  else if(d>.2){flat(5);var a=cl;slope(-60,6);hole(6+Math.random()*(2+d*3)|0);cl=a;flat(8)}
+  else flat(10);
+  addOb();
+}
+function addOb(){
+  var n=T.length;if(n*S/40<1000||n<20)return;
+  for(var i=1;i<=16;i++)if(T[n-i]==null)return;
+  for(var i2=2;i2<=6;i2++)if(T[n-i2]!==T[n-1])return;
+  var ox=(n-3)*S;
+  if(ox-lastOb<260||Math.random()<.3)return;lastOb=ox;
+  var d=Math.min(1,(n*S/40-1000)/1500);
+  if(Math.random()<.4)CW.push({x:ox,y:T[n-3],dir:Math.random()<.7?-1:1,sp:45+Math.random()*40,ph:Math.random()*6});
+  else OB.push({x:ox,w:26+(Math.random()*16|0),h:26+(Math.random()*(14+d*18)|0),y:T[n-3]});
+}
+function ensure(i){while(T.length<=i+3)chunk()}
+function g(x){var i=Math.floor(x/S);if(i<0)return T[0];ensure(i);var a=T[i];if(a==null)return null;var b=T[i+1];if(b==null)return a;return a+(b-a)*(x/S-i)}
+function slopeAt(x){var a=g(x-5),b=g(x+5);return(a==null||b==null)?0:Math.atan2(a-b,10)}
+
+/* state */
+var keys={},sa=0,obsShown=false,state="title",x,y,vx,vy,a,w,rot,onG,coy,jb,x0,tm,shake,fallT,fdir,cause,rx,ry,rvx,rvy,ra,prevSl,rec,recCd,beatShown,camX,camY,dist,ua;
+var tt=0;
+function reset(play){
+  T.length=0;OB.length=0;CW.length=0;lastOb=-1e9;cl=BASE;flat(40);
+  x=x0=200;vx=play?200:0;vy=0;a=0;w=0;rot=0;onG=true;coy=.1;jb=0;tm=0;shake=0;fallT=0;fdir=1;cause="";rec=false;recCd=0;beatShown=false;ua=0;sa=0;dist=0;obsShown=false;
+  y=g(x)-R;prevSl=slopeAt(x);camX=x-W*.3;camY=y-320;
+  state=play?"play":"title";
+  if(play)$("ov").style.display="none";
+}
+function toast(t,ms){var e=$("toast");e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(function(){e.style.opacity=0},ms||1100)}
+function crash(c,dir){
+  if(state!=="play")return;
+  state="fall";cause=c;fdir=dir||(a>=0?1:-1);shake=14;fallT=0;
+  rx=0;ry=0;rvx=vx*.7;rvy=-260;ra=a-sa;
+  snd(180,.5,"sawtooth",.12,-140);snd(90,.3,"square",.1,-40);
+  if(dist>best){best=dist;saveBest();cause+="|new"}
+  addRec();
+}
+function jump(){jb=.12}
+
+/* input */
+var KM={KeyA:"ArrowLeft",KeyD:"ArrowRight",KeyW:"ArrowUp",KeyS:"ArrowDown"};
+addEventListener("keydown",function(e){
+  var k=KM[e.code]||e.code;
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].indexOf(k)>=0)e.preventDefault();
+  if(e.repeat)return;
+  keys[k]=true;
+  if(rovOpen()){if(k==="Escape"||k==="Space"||k==="Enter")closeRec()}
+  else if(k==="KeyR"||((k==="Space"||k==="Enter")&&state!=="play"&&state!=="fall"))reset(true);
+  else if(k==="Escape")showMenu();
+  else if(k==="Space")jump();
+});
+addEventListener("keyup",function(e){keys[KM[e.code]||e.code]=false});
+$("go").onclick=function(){reset(true)};
+$("rb").onclick=openRec;$("rbk").onclick=closeRec;$("mb").onclick=showMenu;
+var SHURL="https://claude.ai/artifact/U6wBfYiPLfeUP5Za5yVmCY";
+function shText(){return "UNICYCLE RUN で "+dist.toFixed(1)+"m 走った！（"+tm.toFixed(1)+"秒）最高記録 "+best.toFixed(1)+"m #UNICYCLERUN"}
+function openUrl(u){var w=window.open(u,"_blank");if(w){try{w.opener=null}catch(e){}}else toast("ポップアップがブロックされました",1500)}
+$("shx").onclick=function(){openUrl("https://twitter.com/intent/tweet?text="+encodeURIComponent(shText())+"&url="+encodeURIComponent(SHURL))};
+$("shl").onclick=function(){openUrl("https://social-plugins.line.me/lineit/share?url="+encodeURIComponent(SHURL)+"&text="+encodeURIComponent(shText()))};
+$("shc").onclick=function(){
+  var t=shText()+" "+SHURL;
+  function fb(){try{var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=document.execCommand("copy");document.body.removeChild(ta);toast(ok?"コピーしました":"コピーに失敗しました",1200)}catch(e){toast("コピーに失敗しました",1200)}}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast("コピーしました",1200)},fb);else fb();
+};
+if(navigator.share){$("shn").style.display="";$("shn").onclick=function(){try{navigator.share({title:"UNICYCLE RUN",text:shText(),url:SHURL}).catch(function(){})}catch(e){}}}
+var pad=$("pad");
+if("ontouchstart" in window||matchMedia("(pointer:coarse)").matches)pad.classList.add("on");
+Array.prototype.forEach.call(pad.querySelectorAll("button"),function(b){
+  var k=b.dataset.k;
+  function dn(e){e.preventDefault();b.classList.add("on");keys[k]=true;if(k==="Space"){if(state==="play")jump();else if(state!=="fall")reset(true)}}
+  function up(e){b.classList.remove("on");keys[k]=false}
+  b.addEventListener("pointerdown",dn);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("pointerleave",up);
+});
+
+/* physics */
+function step(dt){
+  var play=state==="play";
+  if(state==="title"||state==="over"&&false)return;
+  var d=Math.min(1,dist/900);
+  var inp=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0);
+  if(play){
+    tm+=dt;
+    var tg=Math.max(120,230+d*170+(keys.ArrowUp?90:0)-(keys.ArrowDown?90:0));
+    var ax=Math.max(-220,Math.min(220,(tg-vx)*2));vx+=ax*dt;
+    var gk=2.4+vx/220,ctrl=11/(1+vx/900),wd;
+    if(onG)wd=gk*Math.sin(a-sa)+inp*ctrl-2.2*w-ax*.006;
+    else wd=.5*Math.sin(a)+inp*9-1.2*w;
+    w+=wd*dt;a+=w*dt;
+    if(a>1.75){a=1.75;w=0}if(a<-1.75){a=-1.75;w=0}
+    var aw=a-sa,hd=dir(aw*1.25),hx=x+Math.sin(aw)*40+hd[0]*47,hy=y-Math.cos(aw)*40+hd[1]*47,hg=g(hx);
+    if(hg!=null&&hy+9>=hg)crash(aw>0?"前に傾きすぎて頭を打った":"後ろに傾きすぎて頭を打った",aw>0?1:-1);
+    if(Math.abs(a)>.6)rec=true;
+    recCd-=dt;
+    if(rec&&Math.abs(a)<.12&&onG){rec=false;if(recCd<=0){toast("ナイスリカバリー！",800);snd(660,.15,"triangle",.08,300);recCd=3}}
+    if(jb>0)jb-=dt;
+    if(jb>0&&(onG||coy>0)){vy=-640;if(onG){a-=sa;sa=0}onG=false;coy=0;jb=0;snd(420,.15,"square",.06,260)}
+  }else{vx*=1-1.6*dt;fallT+=dt}
+  x+=vx*dt;rot+=vx*dt/R;
+  var G=g(x),gy=G==null?null:G-R,ff=y+vy*dt+.5*GR*dt*dt;
+  if(gy!=null&&ff>=gy){
+    var sl=slopeAt(x);
+    if(!onG){
+      if(play){
+        if(y-gy>20){crash("穴の壁にぶつかった",1)}
+        else{shake=Math.max(shake,3);snd(130,.1,"triangle",.1,-40)}
+      }
+      prevSl=sl;sa=sl;a+=sl;
+    }
+    onG=true;coy=.1;
+    vy=Math.max(-900,(gy-y)/dt);y=gy;
+    sa+=(sl-sa)*Math.min(1,dt*14);prevSl=sl;
+  }else{if(onG){a-=sa;sa=0}onG=false;vy+=GR*dt;y+=vy*dt;coy-=dt}
+  if(play){
+    while(OB.length&&OB[0].x<x-600)OB.shift();
+    for(var ci=CW.length-1;ci>=0;ci--){
+      var c=CW[ci];if(c.x<x-800){CW.splice(ci,1);continue}
+      if(Math.abs(c.x-x)>1400)continue;
+      c.ph+=dt*c.sp*.12;
+      var nx=c.x+c.dir*c.sp*dt;
+      if(g(nx+c.dir*40)==null||g(nx-c.dir*30)==null)c.dir=-c.dir;else c.x=nx;
+      var cg=g(c.x);if(cg!=null)c.y=cg;
+      var cxx=c.x+c.dir*9,cqx=Math.max(cxx-34,Math.min(x,cxx+34)),cqy=Math.max(c.y-48,Math.min(y,c.y)),cdx=x-cqx,cdy=y-cqy;
+      if(cdx*cdx+cdy*cdy<(R-3)*(R-3)){crash("牛にぶつかった",1);break}
+    }
+    for(var oi=0;oi<OB.length;oi++){var o=OB[oi];if(Math.abs(o.x-x)>90)continue;var qx=Math.max(o.x-o.w/2,Math.min(x,o.x+o.w/2)),qy=Math.max(o.y-o.h,Math.min(y,o.y)),ddx=x-qx,ddy=y-qy;if(ddx*ddx+ddy*ddy<(R-3)*(R-3)){crash("障害物にぶつかった",1);break}}
+  }
+  if(play&&y>BASE+160)crash("穴に落ちた",1);
+  if(!play&&y>BASE+500){vy=0}
+  /* rider ragdoll */
+  if(!play){
+    rvy+=GR*dt;rx+=rvx*dt;ry+=rvy*dt;ra+=fdir*3*dt;if(Math.abs(ra)>1.7)ra=fdir*1.7;
+    var sx=x+rx,gg=g(sx);
+    if(gg!=null&&y+ry-30>gg-24){}
+    if(gg!=null&&ry+y-10>gg-10&&rvy>0){ry=gg-10-y;rvy=0;rvx*=.9}
+    if(fallT>1.0&&state==="fall"){state="over";showOver()}
+  }
+  ua=play?a-sa:ua+(fdir*.5-ua)*dt*4;
+  dist=Math.max(0,(x-x0)/40);
+  if(play&&!obsShown&&dist>=950){obsShown=true;toast("⚠ 1000mから障害物ゾーン！木箱と牛をジャンプで避けよう",2000)}
+  if(play&&!beatShown&&best>0&&dist>best){beatShown=true;toast("ベスト更新中！",1400);snd(880,.2,"triangle",.09,400)}
+  if(shake>0)shake=Math.max(0,shake-dt*30);
+}
+function showMenu(){
+  reset(false);
+  $("ot").textContent="UNICYCLE RUN";
+  $("om").textContent="一輪車でバランスを取りながら、できるだけ遠くへ！";
+  $("go").textContent="スタート";$("box").classList.remove("over");$("mb").style.display="none";$("sh").style.display="none";
+  $("ov").style.display="flex";
+}
+function showOver(){
+  var isNew=cause.indexOf("|new")>=0,c=cause.replace("|new","");
+  $("ot").textContent=isNew?"🎉 NEW RECORD!":"転倒！";
+  $("om").innerHTML="原因：<b>"+c+"</b><br>走行距離 "+dist.toFixed(1)+"m　最高記録 "+best.toFixed(1)+"m"+(lastRank?"<br>今回は歴代 <b>"+lastRank+"位</b>":"");
+  $("go").textContent="リトライ (R)";$("box").classList.add("over");$("mb").style.display="";$("sh").style.display="";
+  $("ov").style.display="flex";
+  if(isNew){snd(523,.15,"triangle",.1);setTimeout(function(){snd(784,.25,"triangle",.1)},150)}
+}
+
+/* render */
+function hash(n){var s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s)}
+function dir(t){return[Math.sin(t),-Math.cos(t)]}
+function line(x1,y1,x2,y2,col,lw){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function bg(){
+  var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,"#5fb4ee");gr.addColorStop(1,"#d9f0ff");ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  var off=(BASE-camY)*.15;
+  ctx.fillStyle="rgba(255,255,255,.8)";
+  for(var i=0;i<6;i++){var cx=((i*260-camX*.08)%(W+300)+W+300)%(W+300)-150,cy=60+hash(i)*80;ctx.beginPath();ctx.arc(cx,cy,24,0,7);ctx.arc(cx+26,cy+4,30,0,7);ctx.arc(cx+54,cy,22,0,7);ctx.fill()}
+  [[.15,"#8fb2c9",.006,50,0],[.3,"#6f9a86",.009,36,30]].forEach(function(m){
+    ctx.fillStyle=m[1];ctx.beginPath();ctx.moveTo(0,H);
+    for(var px=0;px<=W+20;px+=20){var u=px+camX*m[0];ctx.lineTo(px,H*.55+m[4]+off-(Math.sin(u*m[2])*m[3]+Math.sin(u*m[2]*2.7)*m[3]*.35+60))}
+    ctx.lineTo(W,H);ctx.fill()});
+  var fy=BASE+80-camY;
+  ctx.fillStyle="#2c4a2e";ctx.fillRect(0,fy,W,H);
+  var k0=Math.floor(camX*.5/110)-1;
+  for(var k=k0;k<k0+W/110+3;k++){if(hash(k+9)<.35)continue;var wx=k*110+hash(k)*60-camX*.5,th=40+hash(k+3)*30;
+    ctx.fillStyle="#5a3b22";ctx.fillRect(wx-3,fy-th,6,th);
+    ctx.fillStyle=hash(k+5)<.5?"#2f8a46":"#3aa655";ctx.beginPath();ctx.arc(wx,fy-th-8,th*.5,0,7);ctx.fill()}
+}
+function ground(){
+  var i0=Math.max(0,Math.floor(camX/S)-1),i1=Math.floor((camX+W)/S)+2;ensure(i1);
+  var bot=camY+H+80,i=i0;
+  while(i<=i1){
+    if(T[i]==null){i++;continue}
+    var s=i;while(i<=i1+1&&T[i]!=null)i++;
+    var e=i-1;
+    ctx.beginPath();ctx.moveTo(s*S,bot);
+    for(var j=s;j<=e;j++)ctx.lineTo(j*S,T[j]);
+    ctx.lineTo((e+1)*S,T[e]);ctx.lineTo((e+1)*S,bot);ctx.closePath();
+    ctx.fillStyle="#8a5a35";ctx.fill();
+    ctx.beginPath();for(var j2=s;j2<=e;j2++){j2===s?ctx.moveTo(j2*S,T[j2]):ctx.lineTo(j2*S,T[j2])}ctx.lineTo((e+1)*S,T[e]);
+    ctx.strokeStyle="#4fbf5a";ctx.lineWidth=8;ctx.lineJoin="round";ctx.stroke();
+  }
+}
+function rider(hx,hy,ang,fl){
+  var d=dir(ang),sx=hx+d[0]*36,sy=hy+d[1]*36;
+  var cx=x+Math.cos(rot)*9,cy=y+Math.sin(rot)*9,cx2=x-Math.cos(rot)*9,cy2=y-Math.sin(rot)*9;
+  var f1x,f1y,f2x,f2y;
+  if(fl){var l1=dir(ang+Math.PI+.5),l2=dir(ang+Math.PI-.4);f1x=hx+l1[0]*30;f1y=hy+l1[1]*30;f2x=hx+l2[0]*30;f2y=hy+l2[1]*30}
+  else{f1x=cx;f1y=cy;f2x=cx2;f2y=cy2}
+  [[f2x,f2y,"#1f2b50"],[f1x,f1y,"#2b3a67"]].forEach(function(p){var mx=(hx+p[0])/2+8,my=(hy+p[1])/2;line(hx,hy,mx,my,p[2],7);line(mx,my,p[0],p[1],p[2],7);line(p[0],p[1],p[0]+9,p[1],"#111",5)});
+  line(hx,hy,sx,sy,"#e8505b",13);
+  var ar=fl?[ang+2.4,ang-2.2]:[1.3-ua,-1.3-ua];
+  ar.forEach(function(t){var q=dir(t);line(sx,sy,sx+q[0]*24,sy+q[1]*24,"#f4c28a",5)});
+  ctx.fillStyle="#f4c28a";ctx.beginPath();ctx.arc(sx+d[0]*11,sy+d[1]*11,9,0,7);ctx.fill();
+  ctx.fillStyle="#e8505b";ctx.beginPath();ctx.arc(sx+d[0]*13,sy+d[1]*13-2,9,Math.PI,0);ctx.fill();
+}
+function unicycle(){
+  ctx.strokeStyle="#222";ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,R,0,7);ctx.stroke();
+  for(var i=0;i<4;i++){var t=rot+i*Math.PI/4;line(x-Math.cos(t)*R,y-Math.sin(t)*R,x+Math.cos(t)*R,y+Math.sin(t)*R,"#bbb",1.5)}
+  ctx.fillStyle="#555";ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();
+  var d=dir(ua),sx=x+d[0]*36,sy=y+d[1]*36;
+  line(x,y,sx,sy,"#666",5);
+  var p=dir(ua+Math.PI/2);line(sx-p[0]*10,sy-p[1]*10,sx+p[0]*10,sy+p[1]*10,"#222",5);
+}
+function obst(){
+  for(var i=0;i<OB.length;i++){var o=OB[i];if(o.x<camX-80||o.x>camX+W+80)continue;
+    var l=o.x-o.w/2,t=o.y-o.h;
+    ctx.fillStyle="#c58a3a";ctx.fillRect(l,t,o.w,o.h);
+    ctx.strokeStyle="#7a4f16";ctx.lineWidth=3;ctx.strokeRect(l,t,o.w,o.h);
+    line(l,t,l+o.w,o.y,"#7a4f16",3);line(l+o.w,t,l,o.y,"#7a4f16",3);
+    ctx.fillStyle="#e8505b";ctx.fillRect(l,t-5,o.w,5);
+  }
+}
+function cows(){
+  for(var i=0;i<CW.length;i++){var c=CW[i];if(c.x<camX-120||c.x>camX+W+120)continue;
+    ctx.save();ctx.translate(c.x,c.y);ctx.rotate(-slopeAt(c.x));ctx.scale(c.dir,1);
+    [-22,-10,10,22].forEach(function(lx,k){var sw=Math.sin(c.ph+(k%2?Math.PI:0)+k)*4;ctx.fillStyle="#e9e9e9";ctx.fillRect(lx-3+sw,-22,6,22);ctx.fillStyle="#333";ctx.fillRect(lx-3+sw,-4,6,4)});
+    line(-28,-46,-37,-28,"#333",3);
+    ctx.strokeStyle="#333";ctx.lineWidth=2;
+    ctx.fillStyle="#f7f7f7";ctx.fillRect(-28,-50,56,30);ctx.strokeRect(-28,-50,56,30);
+    ctx.fillStyle="#222";ctx.fillRect(-20,-46,12,10);ctx.fillRect(4,-40,14,10);ctx.fillRect(-8,-30,9,7);
+    line(31,-54,28,-63,"#e0c080",3);line(41,-54,44,-63,"#e0c080",3);
+    ctx.fillStyle="#f7f7f7";ctx.fillRect(26,-54,20,22);ctx.strokeRect(26,-54,20,22);
+    ctx.fillStyle="#f2a5b0";ctx.fillRect(38,-42,8,10);
+    ctx.fillStyle="#111";ctx.fillRect(34,-49,3,3);
+    ctx.restore();
+  }
+}
+function render(){
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+  var ty=y-320;camY+=(ty-camY)*.08;camX=x-W*.3;
+  if(state==="title")camX=x-W*.3;
+  bg();
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  ctx.translate(-camX,-camY);
+  ground();
+  obst();
+  cows();
+  unicycle();
+  if(state==="play"||state==="title")rider(x+Math.sin(ua)*40,y+(-Math.cos(ua))*40,ua+ua*.25,false);
+  else rider(x+rx+Math.sin(ua)*40,y+ry-30,ra,true);
+  ctx.restore();
+  $("sd").textContent=dist.toFixed(0)+"m";
+  $("sb").textContent=Math.max(best,dist).toFixed(0)+"m";
+  $("ss").textContent=(vx/12).toFixed(0)+"km/h";
+  $("st").textContent=tm.toFixed(1)+"s";
+  var m=Math.max(-1,Math.min(1,a/1.5));$("gm").style.left=(50+m*50)+"%";
+}
+var last=0,acc=0;
+function loop(t){
+  var f=Math.min(.05,(t-last)/1000||0);last=t;acc+=f;
+  while(acc>=1/120){step(1/120);acc-=1/120}
+  render();requestAnimationFrame(loop);
+}
+reset(false);
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>K9 BORDER PATROL — 密輸阻止作戦</title>
+<style>
+:root{--bg:#171e27;--pn:#222c38;--ln:#34414f;--tx:#e8edf2;--mu:#9aa8b6;--y:#f2b705;--g:#3cb371;--r:#e5534b;--t:#2aa7a0;color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",Meiryo,sans-serif;font-size:16px}
+#app{max-width:980px;margin:0 auto;padding:8px}
+#hud{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 12px;margin-bottom:8px}
+#hud b{color:var(--y)}#hTitle{font-weight:800;letter-spacing:.04em}
+.fb{display:inline-block;width:120px;height:12px;background:#10161d;border:1px solid var(--ln);border-radius:6px;vertical-align:middle;overflow:hidden}
+#hFill{display:block;height:100%;background:var(--t);width:100%;transition:width .15s}
+#cv{width:100%;height:auto;aspect-ratio:16/9;display:block;border-radius:8px;border:1px solid var(--ln);background:#000}
+#msg{min-height:44px;margin:8px 0;padding:8px 12px;background:var(--pn);border-left:4px solid var(--y);border-radius:4px;overflow-wrap:anywhere}
+#ctl{display:flex;flex-wrap:wrap;gap:8px}
+#keys{color:var(--mu);font-size:14px;margin-top:8px;line-height:1.6}
+.b{font:inherit;font-weight:700;color:var(--tx);background:#2d3b4b;border:1px solid #4a5b6e;border-radius:8px;padding:10px 16px;cursor:pointer;min-height:44px}
+.b:hover{background:#38495c}.b:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+.b.p{background:var(--y);color:#1a1a1a;border-color:var(--y)}.b.p:hover{background:#ffc928}
+.b:disabled{opacity:.4;cursor:default}.b.on{outline:2px solid var(--t)}
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,14,19,.82);padding:12px;overflow:auto;z-index:5}
+.box{width:min(560px,100%);max-height:100%;overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:22px}
+.box h1{margin:0;font-size:30px;letter-spacing:.06em;color:var(--y)}.box h2{margin:0 0 10px}
+.sub{color:var(--mu);margin:2px 0 16px}.col{display:flex;flex-direction:column;gap:8px}.col .b{text-align:left}
+.box p,.box li{line-height:1.7}.box table{width:100%;border-collapse:collapse}.box td{padding:6px 4px;border-bottom:1px solid var(--ln)}
+.box td:last-child{text-align:right;font-weight:700}.rk{font-size:56px;font-weight:900;color:var(--y);line-height:1}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--ln)}
+.mut{color:var(--mu);font-size:14px}
+</style></head><body>
+<div id="app">
+ <div id="hud"><span id="hTitle">K9 BORDER PATROL</span><span>任務：<b id="hMis">-</b></span><span>残り時間：<b id="hTime">-</b></span><span>発見：<b id="hFound">0</b></span><span>誤警戒：<b id="hFa">0</b></span><span>集中力：<span class="fb"><span id="hFill"></span></span> <b id="hFoc">0</b></span></div>
+ <canvas id="cv" width="960" height="540"></canvas>
+ <div id="msg">メニューから任務を選んでください。</div>
+ <div id="ctl">
+  <button class="b p" id="bE">調べる (E)</button>
+  <button class="b p" id="bS">発見を知らせる (Space)</button>
+  <button class="b" id="bR">休憩 (R)</button>
+  <button class="b" id="bF">集中捜索 (Shift)</button>
+  <button class="b" id="bP">ポーズ (Esc)</button>
+ </div>
+ <div id="keys">移動：W A S D ／ 調べる：E ／ 集中捜索：Shift（押している間、反応が分かりやすくなるが集中力を消耗） ／ 合図：Space ／ 休憩：R ／ ポーズ：Esc<br>荷物に近づくと犬が反応します。犬の姿勢と鼻先の波紋をよく観察しましょう。</div>
+</div>
+<div id="ov"></div>
+<script>
+"use strict";
+/* ========== 基本設定・ユーティリティ ========== */
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d'),VW=960,VH=540;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+
+/* ========== セーブデータ（localStorage） ========== */
+const KEY='k9border_v1';
+const defSave=()=>({unlocked:1,level:1,xp:0,pts:0,ab:{smell:0,focus:0,stamina:0,tech:0},best:[null,null,null],clears:[0,0,0],sound:true,seen:false});
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==='object'){const d=defSave();return Object.assign(d,s,{ab:Object.assign(d.ab,s.ab||{})})}}catch(e){}return defSave()}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function hasSave(){try{return !!localStorage.getItem(KEY)}catch(e){return false}}
+let save=loadSave();
+
+/* ========== 効果音（Web Audio API で生成） ========== */
+let AC=null;
+function tone(f,d,type,v,t0,slide){
+ if(!save.sound)return;
+ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+(t0||0);
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+  g.gain.setValueAtTime(v||.07,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}
+}
+const seq=(fs,d,type,v,gap)=>fs.forEach((f,i)=>tone(f,d,type,v,i*gap));
+const SFX={step:()=>tone(110,.05,'triangle',.04),sniff:()=>{tone(500,.1,'sawtooth',.03,0,900);tone(600,.1,'sawtooth',.03,.16,1000)},
+ signal:()=>{tone(700,.12,'square',.05);tone(900,.18,'square',.05,.14)},ok:()=>seq([523,659,784],.15,'triangle',.08,.1),
+ bad:()=>tone(200,.35,'sawtooth',.06,0,110),clear:()=>seq([523,659,784,1046],.2,'triangle',.08,.13),lvl:()=>seq([392,523,659,784,1046],.12,'square',.05,.08)};
+
+/* ========== 任務データ ========== */
+const MIS=[
+ {name:'新人訓練',goal:'荷物を調べ、犬の反応が強い荷物に合図しよう',time:180,n:4,a:2,b:0,W:960,H:540,clar:1.0,xp:1},
+ {name:'国内空港の荷物検査',goal:'無関係なニオイに惑わされず、誤警戒を減らして密輸品を見つけよう',time:150,n:8,a:3,b:3,W:1100,H:640,clar:.82,xp:1.6},
+ {name:'国際空港の特別検査',goal:'集中力を管理しながら広いエリアを捜索し、見逃しをなくそう',time:210,n:14,a:5,b:5,W:1600,H:960,clar:.68,xp:2.4}];
+const TRAIN={name:'訓練',goal:'何度でも練習できます（経験値なし）',time:120,n:4,a:1,b:1,W:960,H:540,clar:.9,xp:0};
+const COLS=['#c0493b','#2f6fa8','#3e8e5a','#d8a62f','#6b4fa0','#8a8f96','#d4742c','#2a8f8f'];
+const RANKS=['C','B','A','S'];
+
+/* ========== ゲーム状態 ========== */
+let scene='menu',M=TRAIN,cur=-1,bags=[],dog,insp,chk=null,st,rings=[],parts=[],cam={x:0,y:0},T=0,sel=null,keys={},fTog=false,tut=false,msgTm=0,resetArm=false;
+const maxFocus=()=>100+8*save.ab.focus;
+const staMul=()=>1-.08*save.ab.stamina;
+const needXp=l=>60+l*40;
+
+/* 荷物を重ならないよう乱数配置する */
+function genBags(m){
+ const list=[];
+ for(let i=0;i<m.a;i++)list.push('A');
+ for(let i=0;i<m.b;i++)list.push('B');
+ while(list.length<m.n)list.push('C');
+ list.sort(()=>Math.random()-.5);
+ const out=[];
+ list.forEach((type,i)=>{
+  const kind=Math.floor(Math.random()*3);
+  const w=kind===0?rnd(44,56):kind===1?rnd(72,86):rnd(54,64),h=kind===0?rnd(62,80):kind===1?rnd(40,50):rnd(54,64);
+  let x=0,y=0;
+  for(let k=0;k<500;k++){
+   x=rnd(50,m.W-50-w);y=rnd(110,m.H-60-h);
+   const ok=out.every(o=>Math.abs(o.x-x)>Math.max(o.w,w)+50||Math.abs(o.y-y)>Math.max(o.h,h)+50);
+   const far=Math.hypot(x-m.W/2,y-(m.H-60))>110&&!(x>m.W-190&&y>m.H-170);
+   if(ok&&far)break;
+  }
+  /* 反応レベル：密輸品の有無とは別データ（強い反応でも密輸品とは限らない） */
+  let react=0;
+  if(type==='A')react=(m===MIS[0]||Math.random()<.6)?2:1;
+  if(type==='B')react=Math.random()<.5?1:2;
+  out.push({id:i+1,x,y,w,h,kind,col:COLS[(Math.random()*COLS.length)|0],type,react,investigated:false,checked:false,res:null});
+ });
+ return out;
+}
+
+function startMission(i){
+ cur=i;M=i<0?TRAIN:MIS[i];tut=i<=0;bags=genBags(M);
+ dog={x:M.W/2,y:M.H-60,ang:-Math.PI/2,ph:0,st:'idle',focus:maxFocus(),sn:null,sg:null,rest:false,ringT:0,sc:{s:0,lvl:0,b:null},stepT:0,mv:false,fm:false,warned:false};
+ insp={x:M.W-75,y:M.H-70,hx:M.W-75,hy:M.H-70};
+ rings=[];parts=[];chk=null;sel=null;fTog=false;keys={};
+ st={left:M.time,el:0,found:0,fa:0,okT:0,restT:0,hint:{}};
+ scene='play';hideOv();
+ msg(tut?'【訓練】WASDで荷物に近づこう。犬の様子（姿勢・鼻先の波紋）をよく見てください。':'任務開始：'+M.goal,6000);
+}
+
+/* ========== 入力 ========== */
+const kd=c=>keys[c]?1:0;
+addEventListener('keydown',e=>{
+ keys[e.code]=true;keys.Shift=e.shiftKey;
+ if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&scene==='play')e.preventDefault();
+ if(e.repeat)return;
+ if(e.code==='Escape'){scene==='play'?pause():scene==='pause'&&resume();return}
+ if(scene!=='play')return;
+ if(e.code==='KeyE')investigate();
+ if(e.code==='Space')signal();
+ if(e.code==='KeyR')toggleRest();
+});
+addEventListener('keyup',e=>{keys[e.code]=false;keys.Shift=e.shiftKey});
+addEventListener('blur',()=>{keys={};if(scene==='play')pause()});
+$('bE').onclick=()=>{if(scene==='play')investigate()};
+$('bS').onclick=()=>{if(scene==='play')signal()};
+$('bR').onclick=()=>{if(scene==='play')toggleRest()};
+$('bF').onclick=()=>{fTog=!fTog;$('bF').classList.toggle('on',fTog)};
+$('bP').onclick=()=>{scene==='play'?pause():scene==='pause'&&resume()};
+
+/* ========== メッセージ・HUD ========== */
+function msg(t,ms){$('msg').textContent=t;msgTm=ms||3500}
+function updHud(){
+ $('hMis').textContent=M.name;
+ const t=Math.max(0,Math.ceil(st?st.left:M.time));$('hTime').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
+ $('hFound').textContent=st?st.found:0;$('hFa').textContent=st?st.fa:0;
+ const f=dog?dog.focus:0,mx=maxFocus();
+ $('hFoc').textContent=Math.round(f)+'/'+mx;$('hFill').style.width=(100*f/mx)+'%';
+ $('hFill').style.background=f<25?'var(--r)':f<50?'var(--y)':'var(--t)';
+}
+
+/* ========== アクション：調べる・合図・休憩 ========== */
+function distRect(px,py,b){return Math.hypot(Math.max(b.x-px,0,px-b.x-b.w),Math.max(b.y-py,0,py-b.y-b.h))}
+function nearBag(lim){let best=null,bd=lim;for(const b of bags){if(b.checked)continue;const d=distRect(dog.x,dog.y,b);if(d<bd){bd=d;best=b}}return best}
+const busy=()=>dog.sn||dog.sg||scene!=='play';
+
+function investigate(){
+ if(busy())return;
+ const b=nearBag(80);
+ if(!b){msg('荷物に近づいてください');return}
+ dog.rest=false;
+ /* 集中力が低いと反応を見逃すことがある */
+ const miss=dog.focus<20&&Math.random()<.35-.03*save.ab.tech;
+ dog.sn={b,t:0,dur:1.4,miss};b.investigated=true;
+ dog.focus=Math.max(0,dog.focus-5*staMul());
+ SFX.sniff();msg('犬が荷物のニオイを嗅いでいる…',1600);
+}
+function signal(){
+ if(busy())return;
+ const b=nearBag(80);
+ if(!b){msg('合図は荷物の近くで出してください');return}
+ dog.rest=false;dog.sg={b,t:0};SFX.signal();msg('犬が合図をした！ 検査担当者を呼びます。',2000);
+}
+function toggleRest(){
+ if(busy())return;
+ dog.rest=!dog.rest;
+ msg(dog.rest?'犬が休憩している…集中力が回復します。もう一度Rか移動で再開。':'休憩を終えた');
+}
+
+/* ========== 更新処理 ========== */
+function clarity(){
+ const ff=dog.focus<30?.45+dog.focus/55:1;
+ return Math.min(1.5,M.clar*(1+.08*save.ab.smell)*(dog.fm?1.4:1)*ff);
+}
+/* 最も反応が目立つ荷物を求める（反応レベルと距離から強さを計算） */
+function scent(){
+ let best={s:0,lvl:0,b:null};const c=clarity();
+ for(const b of bags){
+  if(b.checked||!b.react)continue;
+  let s=clamp(1-distRect(dog.x,dog.y,b)/110,0,1)*c;
+  if(dog.sn&&dog.sn.b===b)s=dog.sn.miss?0:(1.15+.05*save.ab.tech)*c;
+  if(s*b.react>best.s*(best.lvl||1)&&s>0)best={s,lvl:b.react,b};
+ }
+ return best;
+}
+function moveDog(dx,dy){
+ const R=12,rects=bags.map(b=>b).concat([{x:0,y:0,w:M.W,h:70}]);
+ dog.x=clamp(dog.x+dx,R+8,M.W-R-8);dog.y=clamp(dog.y+dy,R+8,M.H-R-8);
+ for(const r of rects){
+  const cx=clamp(dog.x,r.x,r.x+r.w),cy=clamp(dog.y,r.y,r.y+r.h);let ddx=dog.x-cx,ddy=dog.y-cy,d=Math.hypot(ddx,ddy);
+  if(d<R){
+   if(d===0){dog.y=r.y+r.h+R}else{dog.x=cx+ddx/d*R;dog.y=cy+ddy/d*R}
+  }
+ }
+ dog.x=clamp(dog.x,R+8,M.W-R-8);dog.y=clamp(dog.y,R+8,M.H-R-8);
+}
+function hint(k,t){if(tut&&!st.hint[k]){st.hint[k]=1;msg(t,7000)}}
+
+function update(dt){
+ T+=dt;
+ if(msgTm>0){msgTm-=dt*1000}
+ parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt});parts=parts.filter(p=>p.life>0);
+ rings.forEach(r=>r.t+=dt);rings=rings.filter(r=>r.t<.9);
+ if(scene==='check'){updCheck(dt)}
+ else if(scene==='play'){updPlay(dt)}
+ else{dog.sc=scent();dog.st=dog.sc.s>.3?'idle':'idle'}
+ if(scene!=='play'&&scene!=='check')dog.ph+=dt;
+ updHud();
+}
+
+function updPlay(dt){
+ st.left-=dt;st.el+=dt;if(dog.focus>=25)st.okT+=dt;
+ const ix=kd('KeyD')||kd('ArrowRight'),iy=kd('KeyS')||kd('ArrowDown');
+ const dx=ix-(kd('KeyA')||kd('ArrowLeft')),dy=iy-(kd('KeyW')||kd('ArrowUp'));
+ const want=dx||dy,bz=!!(dog.sn||dog.sg);
+ dog.fm=(keys.Shift||fTog)&&dog.focus>0&&!dog.rest;
+ dog.sc=scent();
+ const sc=dog.sc;
+ /* 移動 */
+ dog.mv=false;
+ if(want&&!bz){
+  if(dog.rest){dog.rest=false}
+  const n=Math.hypot(dx,dy);
+  let sp=150*(dog.fm?.55:1)*(dog.focus<=0?.6:1)*(1-.5*(sc.lvl===2?Math.min(1,sc.s):0));
+  moveDog(dx/n*sp*dt,dy/n*sp*dt);dog.mv=true;
+  const ta=Math.atan2(dy,dx);let da=ta-dog.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+  dog.ang+=da*Math.min(1,dt*12);dog.ph+=dt*sp*.09;
+  dog.stepT-=dt;if(dog.stepT<=0){SFX.step();dog.stepT=dog.fm?.5:.3}
+ }else if(bz||sc.s>.25){
+  const tb=bz?(dog.sn||dog.sg).b:sc.b;
+  if(tb){const ta=Math.atan2(tb.y+tb.h/2-dog.y,tb.x+tb.w/2-dog.x);let da=ta-dog.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;dog.ang+=da*Math.min(1,dt*6)}
+ }
+ /* 集中力の増減 */
+ if(dog.fm)dog.focus-=7*staMul()*dt;
+ else if(dog.mv)dog.focus-=.35*staMul()*dt;
+ else if(dog.rest){dog.focus+=24*dt;st.restT+=dt}
+ else if(!bz)dog.focus+=.5*dt;
+ dog.focus=clamp(dog.focus,0,maxFocus());
+ if(dog.focus<=0&&!dog.warned){dog.warned=true;msg('集中力が切れた…休憩しよう（Rキー）。反応が分かりにくくなっています。',5000)}
+ if(dog.focus>40)dog.warned=false;
+ /* 嗅ぐ・合図の進行 */
+ if(dog.sn){dog.sn.t+=dt;if(dog.sn.t>=dog.sn.dur){
+   dog.sn=null;
+   if(tut){hint('sn','【ヒント】強い反応＝立ち止まり、波紋が速く出ます。弱い反応＝波紋がゆっくり。本物は一定のリズム、気を取られているだけの時は不規則になりがち。確信したらSpaceで合図！')}
+   else msg('調べ終えた。犬の様子から判断して、合図するか次の荷物へ進もう。');
+ }}
+ if(dog.sg){dog.sg.t+=dt;if(dog.sg.t>=.9)beginCheck(dog.sg.b)}
+ /* 波紋の発生（鼻先） */
+ if(sc.s>.1){
+  dog.ringT-=dt;
+  if(dog.ringT<=0){
+   const iv=(sc.lvl===1?.9:.38)/(.4+sc.s)*(sc.b&&sc.b.type==='A'?1:(.35+Math.random()*1.5));
+   dog.ringT=iv;rings.push({x:dog.x+Math.cos(dog.ang)*28,y:dog.y+Math.sin(dog.ang)*28,t:0,lv:sc.lvl});
+   if(sc.s>.35)tone(sc.lvl===2?640:480,.05,'sine',.02);
+  }
+  if(sc.s>.3)hint('ring','【ヒント】鼻先の波紋が反応のサイン。近づくほどはっきりします。Eキーでじっくり調べてみよう。');
+ }
+ /* 姿勢の決定 */
+ const react=sc.s>.28?(sc.lvl===2?'strong':'weak'):null;
+ dog.st=dog.rest?'rest':dog.sg?'signal':(dog.focus<=0&&!dog.sn)?'tired':dog.sn?(react||'sniff'):react?react:dog.mv?'walk':'idle';
+ sel=nearBag(80);
+ if(st.left<=0){finish('時間切れ')}
+}
+
+/* 検査担当者による確認演出 */
+function beginCheck(b){
+ scene='check';chk={b,t:0,done:false,banner:null};insp.tx=b.x+b.w/2;insp.ty=b.y+b.h+28;
+ msg('検査中… 検査担当者が荷物を確認しています。',4000);
+}
+function updCheck(dt){
+ chk.t+=dt;const t=chk.t;
+ if(t<1){const k=t;insp.x=insp.hx+(insp.tx-insp.hx)*k;insp.y=insp.hy+(insp.ty-insp.hy)*k}
+ else if(t>3.2){const k=Math.min(1,(t-3.2)/.6);insp.x=insp.tx+(insp.hx-insp.tx)*k;insp.y=insp.ty+(insp.hy-insp.ty)*k}
+ if(t>=2.4&&!chk.done){
+  chk.done=true;const b=chk.b;b.checked=true;
+  if(b.type==='A'){
+   b.res='found';st.found++;SFX.ok();chk.banner={t:'密輸品を発見！',c:'#3cb371'};
+   for(let i=0;i<24;i++)parts.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:rnd(-120,120),vy:rnd(-120,120),life:rnd(.4,.9),c:'#6fe39a'});
+   msg('検査結果：密輸品を発見！ 次の荷物を探そう。',4500);
+   hint('r1','【ヒント】検査結果が出るまで本物かは確定しません。発見は誤警戒より高い報酬です。');
+  }else{
+   b.res='false';st.fa++;SFX.bad();chk.banner={t:b.type==='B'?'異常なし（食品のニオイ）':'異常なし',c:'#e5534b'};
+   msg('検査結果：密輸品なし。誤警戒として記録されました。反応を見直して再開しよう。',4500);
+  }
+ }
+ if(t>=3.8){
+  scene='play';dog.sg=null;chk=null;
+  if(bags.every(b=>b.type!=='A'||b.checked))finish('全て発見');
+ }
+}
+
+/* ========== 任務終了・結果 ========== */
+function finish(reason){
+ if(scene==='result')return;
+ scene='result';SFX.clear();
+ const A=bags.filter(b=>b.type==='A').length,found=st.found,missed=A-found;
+ const checked=bags.filter(b=>b.checked).length,rate=A?found/A:1;
+ const fp=Math.max(0,1-st.fa*.25),mg=st.el>0?st.okT/st.el:1;
+ const restOk=st.restT>0||mg>=.95;
+ const score=rate*55+fp*25+mg*15+(restOk?5:0);
+ const rank=(score>=92&&missed===0)?'S':score>=78?'A':score>=58?'B':'C';
+ const clear=rate>=.5;
+ const xp=cur<0?0:Math.max(5,Math.round(M.xp*(found*30+{S:40,A:25,B:12,C:5}[rank])-st.fa*4));
+ let ups=0;
+ if(cur>=0){
+  save.xp+=xp;
+  while(save.xp>=needXp(save.level)){save.xp-=needXp(save.level);save.level++;save.pts++;ups++}
+  if(clear){save.clears[cur]++;if(cur<2)save.unlocked=Math.max(save.unlocked,cur+2)}
+  const bi=save.best[cur]?RANKS.indexOf(save.best[cur]):-1;if(RANKS.indexOf(rank)>bi)save.best[cur]=rank;
+  persist();
+ }
+ if(ups)setTimeout(SFX.lvl,700);
+ const mgT=mg>=.9?'優秀':mg>=.7?'良好':'要改善';
+ lastShare='K9 BORDER PATROL【'+M.name+'】評価'+rank+'！ 密輸品 '+found+'/'+A+'件発見、誤警戒'+st.fa+'回、見逃し'+missed+'件。 #K9BorderPatrol';
+ const el=Math.round(st.el);
+ const next=clear&&cur>=0&&cur<2;
+ ov(`<h2>任務結果（${reason}）</h2><p class="mut">${M.name}</p>
+ <div class="rk">${rank}</div><p>${clear?'任務クリア！':'今回は発見が足りませんでした。反応の見方を振り返ってもう一度挑戦しましょう。'}</p>
+ <table><tr><td>検査した荷物</td><td>${checked}個</td></tr><tr><td>発見した密輸品</td><td>${found} / ${A}</td></tr>
+ <tr><td>見逃した密輸品</td><td>${missed}個</td></tr><tr><td>誤警戒</td><td>${st.fa}回</td></tr>
+ <tr><td>所要時間</td><td>${Math.floor(el/60)}分${el%60}秒</td></tr><tr><td>集中力の管理</td><td>${mgT}</td></tr>
+ <tr><td>獲得経験値</td><td>${xp} XP${ups?'（レベルアップ！ Lv'+save.level+'）':''}</td></tr></table>
+ <div class="col" style="margin-top:14px">${next?bt('次の任務へ','startMission('+(cur+1)+')','p'):''}${bt('もう一度挑戦','startMission('+cur+')',next?'':'p')}${ups?bt('犬の能力を強化する','abilities()'):''}${bt('結果をシェア','shareResult()')}${bt('メニューへ','menu()')}</div>`);
+}
+
+/* ========== オーバーレイ画面 ========== */
+const bt=(l,f,c)=>`<button class="b ${c||''}" onclick="${f}">${l}</button>`;
+function ov(h){const o=$('ov');o.innerHTML='<div class="box">'+h+'</div>';o.style.display='flex'}
+function hideOv(){$('ov').style.display='none';$('ov').innerHTML=''}
+
+function menu(){
+ scene='menu';startAttract();
+ ov(`<h1>K9 BORDER PATROL</h1><p class="sub">密輸阻止作戦 ― 探知犬 Lv${save.level}</p><div class="col">
+ ${bt('ゲーム開始','selectMission()','p')}${hasSave()&&(save.unlocked>1||save.xp>0||save.level>1)?bt('続きから（任務'+save.unlocked+'）','startMission('+(save.unlocked-1)+')'):''}
+ ${bt('訓練','startMission(-1)')}${bt('犬の能力','abilities()')}${bt('任務記録','records()')}${bt('操作説明','howto()')}
+ ${bt('サウンド：'+(save.sound?'ON':'OFF'),'toggleSound()')}${bt(resetArm?'本当に削除する（もう一度押す）':'セーブデータのリセット','resetSave()')}</div>`);
+}
+function startAttract(){
+ M=TRAIN;bags=genBags(M);st=null;chk=null;rings=[];
+ dog={x:480,y:300,ang:.4,ph:0,st:'idle',focus:100,sn:null,sg:null,rest:false,ringT:0,sc:{s:0,lvl:0,b:null},stepT:0,mv:false,fm:false,warned:false};
+ insp={x:M.W-75,y:M.H-70,hx:M.W-75,hy:M.H-70};
+}
+function toggleSound(){save.sound=!save.sound;persist();menu()}
+function resetSave(){
+ if(!resetArm){resetArm=true;menu();setTimeout(()=>{if(resetArm&&scene==='menu'){resetArm=false;menu()}},4000)}
+ else{resetArm=false;save=defSave();persist();menu()}
+}
+function selectMission(){
+ let h='<h2>任務選択</h2>';
+ MIS.forEach((m,i)=>{const lock=i>=save.unlocked;
+  h+=`<div class="row"><div><b>${m.name}</b><div class="mut">${lock?'前の任務をクリアすると解放':m.goal}</div></div>${lock?'<span class="mut">未解放</span>':bt('出動','startMission('+i+')','p')}</div>`});
+ ov(h+`<div class="col" style="margin-top:12px">${bt('戻る','menu()')}</div>`);
+}
+function records(){
+ let h='<h2>任務記録</h2>';
+ MIS.forEach((m,i)=>{h+=`<div class="row"><div><b>${m.name}</b><div class="mut">クリア ${save.clears[i]}回</div></div><b>最高評価：${save.best[i]||'―'}</b></div>`});
+ ov(h+`<p class="mut">レベル ${save.level}／経験値 ${save.xp} / ${needXp(save.level)}</p>${bt('戻る','menu()')}`);
+}
+function abilities(){
+ const N={smell:['嗅覚','反応を識別しやすくなる'],focus:['集中力','集中力の最大値が上がる'],stamina:['スタミナ','集中力の消耗が減る'],tech:['捜索技術','調べた時の反応が分かりやすくなる']};
+ let h=`<h2>犬の能力</h2><p>Lv${save.level}　経験値 ${save.xp}/${needXp(save.level)}　強化ポイント <b>${save.pts}</b></p>`;
+ for(const k in N){const v=save.ab[k];h+=`<div class="row"><div><b>${N[k][0]}</b> Lv${v}/5<div class="mut">${N[k][1]}</div></div>${bt('強化','upAb(\''+k+'\')',save.pts>0&&v<5?'p':'').replace('<button','<button '+(save.pts>0&&v<5?'':'disabled'))}</div>`}
+ ov(h+`<div class="col" style="margin-top:12px">${bt('戻る','menu()')}</div>`);
+}
+function upAb(k){if(save.pts>0&&save.ab[k]<5){save.pts--;save.ab[k]++;persist();SFX.ok();abilities()}}
+function howto(){
+ save.seen=true;persist();
+ ov(`<h2>操作説明</h2><ul><li>W A S D：移動 ／ E：調べる ／ Space：発見の合図 ／ R：休憩 ／ Shift：集中捜索 ／ Esc：ポーズ</li>
+ <li>荷物に近づくと、犬の鼻先に<b>波紋</b>が出ます。速く出て犬が立ち止まるほど<b>強い反応</b>、ゆっくりなら<b>弱い反応</b>です。</li>
+ <li>強い反応でも密輸品とは限りません。食品などに気を取られると、波紋のリズムが<b>不規則</b>になりがちです。</li>
+ <li>「調べる」でじっくり嗅ぎ、確信したら「発見を知らせる」。検査担当者が確認するまで結果は分かりません。</li>
+ <li>集中捜索や長い捜索で集中力が減り、低いと反応を見逃しやすくなります。適度に休憩しましょう。</li>
+ <li>発見は高報酬、誤警戒は減点。見逃しや誤警戒があっても任務は続けられます。</li></ul>${bt('閉じる','menu()','p')}`);
+}
+function pause(){if(scene!=='play')return;scene='pause';keys={};
+ ov(`<h2>ポーズ中</h2><div class="col">${bt('再開','resume()','p')}${bt('任務をやり直す','startMission('+cur+')')}${bt('任務を終了して結果を見る','scene=\'play\';finish(\'中断\')')}${bt('サウンド：'+(save.sound?'ON':'OFF'),'save.sound=!save.sound;persist();pause2()')}${bt('メニューへ','menu()')}</div>`)}
+function pause2(){scene='play';pause()}
+function resume(){if(scene==='pause'){scene='play';keys={};hideOv()}}
+
+/* ========== 結果のシェア（X投稿・コピー・端末の共有） ========== */
+let lastShare='';
+function shareResult(){
+ const box=document.querySelector('#ov .box');if(!box)return;
+ const old=$('shp');if(old){old.remove();return}
+ const p=document.createElement('div');p.id='shp';p.style.cssText='margin-top:14px;padding-top:12px;border-top:1px solid var(--ln)';
+ const gameUrl='https://chiidu1023.github.io/chiidu-games/games/K9%20BORDER%20PATROL%20%E2%80%94%20%E5%AF%86%E8%BC%B8%E9%98%BB%E6%AD%A2%E4%BD%9C%E6%88%A6.html';
+ const shareText=lastShare+'\n'+gameUrl;
+ const url='https://twitter.com/intent/tweet?text='+encodeURIComponent(lastShare)+'&url='+encodeURIComponent(gameUrl);
+ p.innerHTML='<p class="mut">シェア用テキスト</p><textarea id="shT" readonly rows="3" style="width:100%;font:inherit;background:#10161d;color:var(--tx);border:1px solid var(--ln);border-radius:8px;padding:8px"></textarea>'+
+  '<div class="col" style="margin-top:8px"><a class="b p" style="text-decoration:none;display:block" href="'+url+'" target="_blank" rel="noopener noreferrer">Xに投稿する</a>'+
+  bt('テキストをコピー','copyShare()')+(navigator.share?bt('端末の共有メニューを開く','nativeShare()'):'')+'</div><p class="mut" id="shM"></p>';
+ box.appendChild(p);$('shT').value=shareText;
+}
+function copyShare(){
+ const m=$('shM'),t=$('shT');
+ const fb=()=>{try{t.focus();t.select();m.textContent=document.execCommand('copy')?'コピーしました':'テキストを選択しました。手動でコピーしてください'}catch(e){m.textContent='テキストを選択してコピーしてください'}};
+ try{navigator.clipboard.writeText(t.value).then(()=>{m.textContent='コピーしました'},fb)}catch(e){fb()}
+}
+function nativeShare(){try{navigator.share({title:'K9 BORDER PATROL — 密輸阻止作戦',text:lastShare,url:'https://chiidu1023.github.io/chiidu-games/games/K9%20BORDER%20PATROL%20%E2%80%94%20%E5%AF%86%E8%BC%B8%E9%98%BB%E6%AD%A2%E4%BD%9C%E6%88%A6.html'}).catch(()=>{})}catch(e){}}
+
+/* ========== 描画 ========== */
+function drawFloor(){
+ const W=M.W,H=M.H;
+ ctx.fillStyle='#c8cfd5';ctx.fillRect(0,0,W,H);
+ ctx.strokeStyle='#bac2c9';ctx.lineWidth=1;ctx.beginPath();
+ for(let x=0;x<=W;x+=80){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=0;y<=H;y+=80){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.stroke();
+ ctx.strokeStyle='#e0b020';ctx.lineWidth=6;ctx.setLineDash([26,16]);ctx.beginPath();ctx.moveTo(10,H-140);ctx.lineTo(W-170,H-140);ctx.moveTo(W-170,H-140);ctx.lineTo(W-170,H-10);ctx.stroke();ctx.setLineDash([]);
+ ctx.strokeStyle='#2b333c';ctx.lineWidth=16;ctx.strokeRect(0,0,W,H);
+ /* 検査台エリア */
+ ctx.fillStyle='rgba(242,183,5,.2)';ctx.fillRect(W-160,H-130,150,120);
+ ctx.fillStyle='#5b6672';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText('検査台',W-85,H-112);
+ ctx.fillStyle='#8a97a5';rr(W-118,H-100,86,26,4);ctx.fill();
+}
+function drawBelt(){
+ ctx.fillStyle='#3a4048';ctx.fillRect(0,0,M.W,70);ctx.fillStyle='#2a2f35';ctx.fillRect(0,58,M.W,12);
+ ctx.strokeStyle='#4d555e';ctx.lineWidth=3;const off=(T*40)%40;
+ for(let x=-40+off;x<M.W;x+=40){ctx.beginPath();ctx.moveTo(x,8);ctx.lineTo(x,54);ctx.stroke()}
+ for(let i=0;i<Math.ceil(M.W/260);i++){const x=((i*260+T*40)%(M.W+120))-60;ctx.fillStyle=COLS[i%COLS.length];rr(x,16,46,30,5);ctx.fill();ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+20,12,6,6)}
+}
+function drawBag(b){
+ let ox=0;if(chk&&chk.b===b&&chk.t>1&&chk.t<2.4)ox=Math.sin(T*40)*2;
+ ctx.save();ctx.translate(b.x+ox,b.y);
+ ctx.fillStyle='rgba(0,0,0,.18)';rr(4,5,b.w,b.h,8);ctx.fill();
+ ctx.fillStyle=b.col;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=2;rr(0,0,b.w,b.h,b.kind===1?b.h/2:8);ctx.fill();ctx.stroke();
+ ctx.strokeStyle='rgba(0,0,0,.28)';ctx.lineWidth=3;ctx.beginPath();
+ if(b.kind===0){for(let i=1;i<4;i++){ctx.moveTo(b.w*i/4,7);ctx.lineTo(b.w*i/4,b.h-7)}ctx.stroke();ctx.fillStyle='#222';ctx.fillRect(b.w/2-8,-4,16,5)}
+ else if(b.kind===1){ctx.moveTo(b.w/2,3);ctx.lineTo(b.w/2,b.h-3);ctx.stroke();ctx.fillStyle='#222';ctx.fillRect(b.w*.2,b.h/2-3,b.w*.6,6)}
+ else{ctx.moveTo(7,7);ctx.lineTo(b.w-7,b.h-7);ctx.moveTo(b.w-7,7);ctx.lineTo(7,b.h-7);ctx.stroke()}
+ ctx.fillStyle='#f4f4f0';ctx.fillRect(b.w-13,b.h-15,9,11);
+ if(b.investigated&&!b.res){ctx.fillStyle='#f2b705';ctx.beginPath();ctx.arc(9,9,4.5,0,7);ctx.fill()}
+ if(b.res){ctx.lineWidth=4;ctx.strokeStyle=b.res==='found'?'#3cb371':'#e5534b';rr(-2,-2,b.w+4,b.h+4,9);ctx.stroke();
+  ctx.fillStyle=ctx.strokeStyle;ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillText(b.res==='found'?'✓':'×',b.w/2,b.h/2+10)}
+ ctx.restore();
+ if(sel===b&&scene==='play'){
+  const p=3+Math.sin(T*6)*2,x=b.x-p,y=b.y-p,w=b.w+p*2,h=b.h+p*2,L=12;
+  ctx.strokeStyle='#f2b705';ctx.lineWidth=3;ctx.beginPath();
+  [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(c=>{ctx.moveTo(c[0]+c[2]*L,c[1]);ctx.lineTo(c[0],c[1]);ctx.lineTo(c[0],c[1]+c[3]*L)});ctx.stroke();
+  ctx.fillStyle='rgba(23,30,39,.85)';rr(b.x+b.w/2-42,b.y-30,84,20,5);ctx.fill();ctx.fillStyle='#f2b705';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('E：調べる',b.x+b.w/2,b.y-16);
+ }
+}
+function drawInsp(){
+ const x=insp.x,y=insp.y;ctx.save();ctx.translate(x,y);
+ ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(0,3,17,10,0,0,7);ctx.fill();
+ ctx.fillStyle='#f2b705';ctx.beginPath();ctx.ellipse(0,0,16,9,0,0,7);ctx.fill();
+ ctx.fillStyle='#e8c9a0';ctx.beginPath();ctx.arc(0,0,7,0,7);ctx.fill();ctx.fillStyle='#2b3a55';ctx.beginPath();ctx.arc(0,-1,7,Math.PI,0);ctx.fill();
+ if(chk&&chk.t>=1&&chk.t<2.4){ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText('検査中'+'.'.repeat(1+Math.floor(T*3)%3),0,-20)}
+ ctx.restore();
+ if(chk&&chk.banner&&chk.t>=2.4&&chk.t<3.6){
+  const b=chk.b,t=chk.banner.t;ctx.font='bold 17px sans-serif';const w=ctx.measureText(t).width+24;
+  ctx.fillStyle='rgba(23,30,39,.92)';rr(b.x+b.w/2-w/2,b.y-52,w,30,6);ctx.fill();ctx.fillStyle=chk.banner.c;ctx.textAlign='center';ctx.fillText(t,b.x+b.w/2,b.y-31);
+ }
+}
+function drawRings(){rings.forEach(r=>{ctx.strokeStyle='rgba(30,140,135,'+(1-r.t/.9)*.9+')';ctx.lineWidth=r.lv===2?4:2;ctx.beginPath();ctx.arc(r.x,r.y,8+r.t*75,0,7);ctx.stroke()})}
+function drawParts(){parts.forEach(p=>{ctx.fillStyle=p.c;ctx.globalAlpha=clamp(p.life*2,0,1);ctx.fillRect(p.x,p.y,5,5)});ctx.globalAlpha=1}
+
+/* 犬のCanvas描画：状態に応じて姿勢・動きが変わる */
+function drawDog(){
+ const d=dog,s=d.st;ctx.save();ctx.translate(d.x,d.y);
+ ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(0,5,25,13,0,0,7);ctx.fill();
+ ctx.rotate(d.ang);
+ const sw=s==='walk'?Math.sin(d.ph)*6:0;
+ let bl=1,hx=14,hy=0,tail=Math.sin(T*(s==='signal'?18:s==='walk'?8:3))*.6;
+ if(s==='strong'){bl=1.12;hx=18;tail=.05}
+ if(s==='signal'||s==='rest')bl=.8;
+ if(s==='sniff'||s==='weak')hy=Math.sin(T*14)*(s==='sniff'?3:2);
+ if(s==='tired'){hx=11;bl=.95;tail=Math.sin(T*1.5)*.15}
+ const col=s==='tired'?'#8e6a45':'#b9783b';
+ ctx.fillStyle='#7a4d24';
+ [[9,-8,1],[9,8,-1],[-11,-8,-1],[-11,8,1]].forEach(l=>{ctx.beginPath();ctx.ellipse(l[0]*bl+sw*l[2],l[1],5,3,0,0,7);ctx.fill()});
+ ctx.save();ctx.translate(-20*bl,0);ctx.rotate(tail);ctx.strokeStyle=col;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-12,0);ctx.stroke();ctx.restore();
+ ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(-3,0,19*bl,10,0,0,7);ctx.fill();
+ ctx.fillStyle='#d9472b';ctx.fillRect(-7,-8.5,10,17);
+ ctx.fillStyle='#5a3515';[-1,1].forEach(k=>{ctx.beginPath();ctx.ellipse(hx-3,hy+k*7,5,3,k*.5,0,7);ctx.fill()});
+ ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(hx,hy,8,7,0,0,7);ctx.fill();
+ ctx.fillStyle='#d9a066';ctx.beginPath();ctx.ellipse(hx+7,hy,5,3.6,0,0,7);ctx.fill();
+ ctx.fillStyle='#111';ctx.beginPath();ctx.arc(hx+11,hy,2+((s==='sniff'||s==='weak'||s==='strong')?Math.abs(Math.sin(T*16))*.8:0),0,7);ctx.fill();
+ ctx.beginPath();ctx.arc(hx+3,hy-3.5,1.3,0,7);ctx.arc(hx+3,hy+3.5,1.3,0,7);ctx.fill();
+ if(s==='tired'){ctx.fillStyle='#e58a9a';ctx.beginPath();ctx.ellipse(hx+8,hy+3,3,2,0,0,7);ctx.fill()}
+ ctx.restore();
+ ctx.textAlign='center';
+ if(s==='signal'){ctx.fillStyle='#f2b705';ctx.font='bold 26px sans-serif';ctx.fillText('!',d.x,d.y-30-Math.abs(Math.sin(T*10))*4)}
+ if(s==='rest'||s==='tired'){ctx.fillStyle='#fff';ctx.font='bold 15px sans-serif';ctx.fillText(s==='rest'?'Zzz':'…',d.x+14,d.y-24-Math.sin(T*2)*3)}
+}
+function draw(){
+ ctx.clearRect(0,0,VW,VH);
+ cam.x=clamp(dog.x-VW/2,0,Math.max(0,M.W-VW));cam.y=clamp(dog.y-VH/2,0,Math.max(0,M.H-VH));
+ ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));
+ drawFloor();drawBelt();bags.forEach(drawBag);drawInsp();drawRings();drawDog();drawParts();
+ ctx.restore();
+ /* 集中力が低い時は画面端を暗くして視界が悪いことを表現 */
+ if(scene==='play'&&dog.focus<25){const g=ctx.createRadialGradient(VW/2,VH/2,VH*.3,VW/2,VH/2,VH*.85);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,'+(.55*(1-dog.focus/25))+')');ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH)}
+}
+
+/* ========== メインループ（エラーでも止まらない） ========== */
+let last=performance.now();
+function loop(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;
+ try{update(dt);draw()}catch(e){console.error(e)}
+ requestAnimationFrame(loop);
+}
+$('bE').disabled=false;
+startAttract();
+if(!save.seen){howto()}else{menu()}
+requestAnimationFrame(loop);
+</script>
+</body></html>
